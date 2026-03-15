@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<input-method xmlns:android="http://schemas.android.com/apk/res/android">
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="com.gihansgamage.aksharakb.SettingsActivity">
     <subtype
         android:label="@string/subtype_en"
         android:imeSubtypeLocale="en_US"
         android:imeSubtypeMode="keyboard" />
     <subtype
         android:label="@string/subtype_si"
-        android:imeSubtypeLocale="si"
+        android:imeSubtypeLocale="si_LK"
         android:imeSubtypeMode="keyboard" />
     <subtype
         android:label="@string/subtype_ta"
-        android:imeSubtypeLocale="ta"
+        android:imeSubtypeLocale="ta_LK"
         android:imeSubtypeMode="keyboard" />
 </input-method>

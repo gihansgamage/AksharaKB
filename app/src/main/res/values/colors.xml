@@ -1,10 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Brand -->
+    <color name="primary">#5E35B1</color>
+    <color name="primary_dark">#4527A0</color>
+    <color name="primary_light">#EDE7F6</color>
+    <color name="accent">#7C4DFF</color>
+
+    <!-- UI -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="bg_main">#F5F5F7</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="text_primary">#1A1A2E</color>
+    <color name="text_secondary">#757575</color>
+
+    <!-- Keyboard Themes -->
+    <color name="kb_default_bg">#F0F0F0</color>
+    <color name="kb_dark_bg">#1A1A2E</color>
+    <color name="kb_ocean_bg">#0D3B66</color>
+    <color name="kb_sunset_bg">#4A1942</color>
+
+    <!-- Keyboard Keys -->
+    <color name="key_default">#FFFFFF</color>
+    <color name="key_dark">#2D2D44</color>
+    <color name="key_ocean">#1B5E8A</color>
+    <color name="key_sunset">#6B2564</color>
+    <color name="key_special">#D0D0D0</color>
+    <color name="key_text_light">#FFFFFF</color>
+    <color name="key_text_dark">#1A1A2E</color>
+
+    <!-- Candidate bar -->
+    <color name="candidate_bar_bg">#EFEFEF</color>
+    <color name="candidate_bg">#FFFFFF</color>
+    <color name="candidate_text">#333333</color>
+
+    <!-- Legacy -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
 </resources>

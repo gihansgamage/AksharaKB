@@ -1,47 +1,58 @@
 package com.gihansgamage.aksharakb
 
+import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.gihansgamage.aksharakb.ui.theme.AksharaKBTheme
+import android.provider.Settings
+import android.view.inputmethod.InputMethodManager
+import androidx.appcompat.app.AppCompatActivity
+import com.gihansgamage.aksharakb.databinding.ActivityMainBinding
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            AksharaKBTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        setupClickListeners()
+        updateSetupStatus()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateSetupStatus()
+    }
+
+    private fun setupClickListeners() {
+        binding.btnEnableKeyboard.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
+        }
+
+        binding.btnSelectKeyboard.setOnClickListener {
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showInputMethodPicker()
+        }
+
+        binding.btnOpenSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    private fun updateSetupStatus() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        val enabledMethods = imm.enabledInputMethodList
+        val isEnabled = enabledMethods.any {
+            it.packageName == packageName
+        }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AksharaKBTheme {
-        Greeting("Android")
+        if (isEnabled) {
+            binding.step1Status.setImageResource(R.drawable.ic_check)
+            binding.btnEnableKeyboard.text = getString(R.string.step1_done)
+        } else {
+            binding.step1Status.setImageResource(R.drawable.ic_pending)
+            binding.btnEnableKeyboard.text = getString(R.string.enable_keyboard)
+        }
     }
 }

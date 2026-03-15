@@ -1,3 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AksharaKB</string>
+    <string name="settings_title">Keyboard Settings</string>
+
+    <!-- IME Subtypes -->
+    <string name="subtype_en">English (US)</string>
+    <string name="subtype_si">Sinhala (Sri Lanka)</string>
+    <string name="subtype_ta">Tamil (Sri Lanka)</string>
+
+    <!-- Main Activity -->
+    <string name="enable_keyboard">Enable AksharaKB in Settings</string>
+    <string name="step1_done">✅ AksharaKB is Enabled</string>
+    <string name="select_keyboard">Switch to AksharaKB</string>
+
+    <!-- Settings -->
+    <string name="theme_section">Theme</string>
+    <string name="theme_default">Default (Light)</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_ocean">Ocean Blue</string>
+    <string name="theme_sunset">Sunset Purple</string>
+    <string name="set_bg_image">Custom Background Image</string>
+    <string name="clear_bg_image">Clear Custom Background</string>
+    <string name="show_border">Show Key Borders</string>
+    <string name="sinhala_layout">Sinhala Layout</string>
+    <string name="layout_phonetic">Phonetic</string>
+    <string name="layout_wijesekara">Wijesekara</string>
+    <string name="vibrate_on_key">Vibrate on Keypress</string>
+    <string name="sound_on_key">Sound on Keypress</string>
+    <string name="show_predictions">Word &amp; Emoji Predictions</string>
+    <string name="key_height">Key Height</string>
 </resources>
