@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#000000">
+
+    <!-- Prediction Bar (Optional) -->
+    <HorizontalScrollView
+        android:id="@+id/candidates_view"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="#FFFFFF"
+        android:visibility="gone">
+        <LinearLayout
+            android:id="@+id/candidates_container"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"/>
+    </HorizontalScrollView>
+
+    <!-- The Custom Keyboard View -->
+    <com.yourname.trilingualkeyboard.MyKeyboardView
+        android:id="@+id/keyboard_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:keyPreviewLayout="@layout/key_preview"
+        android:background="@android:color/transparent"/>
+</LinearLayout>
