@@ -5,6 +5,12 @@
     android:orientation="vertical"
     android:background="@android:color/transparent">
 
+    <!-- Accent glow line at very top -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@drawable/glow_line_top"/>
+
     <!-- Prediction / Clipboard bar -->
     <HorizontalScrollView
         android:id="@+id/candidates_view"
@@ -20,17 +26,21 @@
             android:layout_height="match_parent"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"/>
 
     </HorizontalScrollView>
 
-    <!-- Keyboard -->
+    <!-- Custom keyboard view (draws its own keys) -->
     <com.gihansgamage.aksharakb.MyKeyboardView
         android:id="@+id/keyboard_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
-        android:keyPreviewLayout="@layout/key_preview"/>
+        android:keyPreviewLayout="@layout/key_preview"
+        android:keyTextColor="#00000000"
+        android:keyBackground="@android:color/transparent"
+        android:shadowColor="#00000000"
+        android:shadowRadius="0"/>
 
 </LinearLayout>
