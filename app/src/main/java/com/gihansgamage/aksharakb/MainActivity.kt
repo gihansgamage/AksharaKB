@@ -15,44 +15,40 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        setupClickListeners()
-        updateSetupStatus()
+        setupListeners()
     }
 
     override fun onResume() {
         super.onResume()
-        updateSetupStatus()
+        updateStatus()
     }
 
-    private fun setupClickListeners() {
+    private fun setupListeners() {
         binding.btnEnableKeyboard.setOnClickListener {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         }
-
         binding.btnSelectKeyboard.setOnClickListener {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showInputMethodPicker()
         }
-
         binding.btnOpenSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
-    private fun updateSetupStatus() {
+    private fun updateStatus() {
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        val enabledMethods = imm.enabledInputMethodList
-        val isEnabled = enabledMethods.any {
-            it.packageName == packageName
-        }
-
-        if (isEnabled) {
-            binding.step1Status.setImageResource(R.drawable.ic_check)
-            binding.btnEnableKeyboard.text = getString(R.string.step1_done)
+        val enabled = imm.enabledInputMethodList.any { it.packageName == packageName }
+        if (enabled) {
+            binding.step1Card.alpha = 0.6f
+            binding.step1Badge.text = "✓"
+            binding.btnEnableKeyboard.text = "AksharaKB Enabled ✓"
+            binding.btnEnableKeyboard.isEnabled = false
         } else {
-            binding.step1Status.setImageResource(R.drawable.ic_pending)
+            binding.step1Card.alpha = 1f
+            binding.step1Badge.text = "1"
             binding.btnEnableKeyboard.text = getString(R.string.enable_keyboard)
+            binding.btnEnableKeyboard.isEnabled = true
         }
     }
 }

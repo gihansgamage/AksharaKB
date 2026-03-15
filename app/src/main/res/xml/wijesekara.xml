@@ -1,74 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Wijesekara Sinhala Layout - Standard Sri Lankan Sinhala keyboard -->
+<!--
+  Wijesekara Sinhala Layout — standard Sri Lankan keyboard standard
+  Rows match the physical key positions of the official Wijesekara layout.
+-->
 <Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
     android:keyWidth="10%p"
-    android:keyHeight="56dp"
-    android:horizontalGap="2dp"
-    android:verticalGap="2dp">
+    android:keyHeight="54dp"
+    android:horizontalGap="3dp"
+    android:verticalGap="3dp">
 
-    <!-- Row 1 -->
+    <!-- Row 1: ූ  ෑ  ්  ඍ  ර  ත  ය  උ  ි  ො -->
     <Row>
-        <Key android:codes="3522"  android:keyLabel="ූ"  android:keyEdgeFlags="left"/>
-        <Key android:codes="3523"  android:keyLabel="ෑ"/>
-        <Key android:codes="3524"  android:keyLabel="ඒ"/>
-        <Key android:codes="3525"  android:keyLabel="ඍ"/>
-        <Key android:codes="3482"  android:keyLabel="ර"/>
-        <Key android:codes="3483"  android:keyLabel="ත"/>
-        <Key android:codes="3484"  android:keyLabel="ය"/>
-        <Key android:codes="3485"  android:keyLabel="උ"/>
-        <Key android:codes="3461"  android:keyLabel="ි"/>
-        <Key android:codes="3462"  android:keyLabel="ො"  android:keyEdgeFlags="right"/>
+        <Key android:codes="3541" android:keyLabel="ූ" android:keyEdgeFlags="left"/>
+        <Key android:codes="3548" android:keyLabel="ො"/>
+        <Key android:codes="3534" android:keyLabel="්"/>
+        <Key android:codes="3471" android:keyLabel="ඍ"/>
+        <Key android:codes="3515" android:keyLabel="ර"/>
+        <Key android:codes="3516" android:keyLabel="ත"/>
+        <Key android:codes="3527" android:keyLabel="ය"/>
+        <Key android:codes="3467" android:keyLabel="උ"/>
+        <Key android:codes="3538" android:keyLabel="ි"/>
+        <Key android:codes="3549" android:keyLabel="ෝ" android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- Row 2 -->
+    <!-- Row 2: ා  ස  ද  ෆ  ග  හ  ජ  ක  ල  ළ -->
     <Row>
-        <Key android:codes="3527"  android:keyLabel="ා"  android:keyEdgeFlags="left"/>
-        <Key android:codes="3490"  android:keyLabel="ස"/>
-        <Key android:codes="3529"  android:keyLabel="ද"/>
-        <Key android:codes="3530"  android:keyLabel="ෆ"/>
-        <Key android:codes="3512"  android:keyLabel="ග"/>
-        <Key android:codes="3515"  android:keyLabel="හ"/>
-        <Key android:codes="3517"  android:keyLabel="ජ"/>
-        <Key android:codes="3520"  android:keyLabel="ක"/>
-        <Key android:codes="3505"  android:keyLabel="ල"/>
-        <Key android:codes="3535"  android:keyLabel="ළ"  android:keyEdgeFlags="right"/>
+        <Key android:codes="3535" android:keyLabel="ා" android:horizontalGap="5%p" android:keyEdgeFlags="left"/>
+        <Key android:codes="3523" android:keyLabel="ස"/>
+        <Key android:codes="3521" android:keyLabel="ද"/>
+        <Key android:codes="3559" android:keyLabel="ෆ"/>
+        <Key android:codes="3484" android:keyLabel="ග"/>
+        <Key android:codes="3524" android:keyLabel="හ"/>
+        <Key android:codes="3490" android:keyLabel="ජ"/>
+        <Key android:codes="3482" android:keyLabel="ක"/>
+        <Key android:codes="3517" android:keyLabel="ල"/>
+        <Key android:codes="3526" android:keyLabel="ළ" android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- Row 3 -->
+    <!-- Row 3: ⇧  ෂ  ච  ව  බ  න  ම  ⌫ -->
     <Row>
-        <Key android:codes="-1"    android:keyLabel="⇧"  android:keyWidth="14%p" android:keyEdgeFlags="left" android:isModifier="true"/>
-        <Key android:codes="3548"  android:keyLabel="ෂ"/>
-        <Key android:codes="3549"  android:keyLabel="ඛ"/>
-        <Key android:codes="3462"  android:keyLabel="ච"/>
-        <Key android:codes="3463"  android:keyLabel="ව"/>
-        <Key android:codes="3465"  android:keyLabel="බ"/>
-        <Key android:codes="3466"  android:keyLabel="න"/>
-        <Key android:codes="3467"  android:keyLabel="ම"/>
-        <Key android:codes="-5"    android:keyLabel="⌫"  android:keyWidth="14%p" android:keyEdgeFlags="right" android:isRepeatable="true"/>
+        <Key android:codes="-1"   android:keyLabel="⇧"  android:keyWidth="14%p" android:keyEdgeFlags="left" android:isModifier="true" android:isSticky="true"/>
+        <Key android:codes="3530" android:keyLabel="ෂ"/>
+        <Key android:codes="3491" android:keyLabel="ච"/>
+        <Key android:codes="3519" android:keyLabel="ව"/>
+        <Key android:codes="3494" android:keyLabel="බ"/>
+        <Key android:codes="3505" android:keyLabel="න"/>
+        <Key android:codes="3512" android:keyLabel="ම"/>
+        <Key android:codes="3499" android:keyLabel="ණ"/>
+        <Key android:codes="-5"   android:keyLabel="⌫"  android:keyWidth="14%p" android:keyEdgeFlags="right" android:isRepeatable="true"/>
     </Row>
 
-    <!-- Row 4 -->
+    <!-- Vowel signs -->
     <Row>
-        <Key android:codes="3538"  android:keyLabel="ු"  android:keyEdgeFlags="left"/>
-        <Key android:codes="3539"  android:keyLabel="ූ"/>
-        <Key android:codes="3540"  android:keyLabel="ැ"/>
-        <Key android:codes="3541"  android:keyLabel="ෛ"/>
-        <Key android:codes="3545"  android:keyLabel="ේ"/>
-        <Key android:codes="3536"  android:keyLabel="ී"/>
-        <Key android:codes="3530"  android:keyLabel="ි"/>
-        <Key android:codes="3545"  android:keyLabel="ං"/>
-        <Key android:codes="3546"  android:keyLabel="ඃ"/>
-        <Key android:codes="3534"  android:keyLabel="්"  android:keyEdgeFlags="right"/>
+        <Key android:codes="3461" android:keyLabel="අ" android:keyEdgeFlags="left"/>
+        <Key android:codes="3462" android:keyLabel="ආ"/>
+        <Key android:codes="3465" android:keyLabel="ඉ"/>
+        <Key android:codes="3466" android:keyLabel="ඊ"/>
+        <Key android:codes="3537" android:keyLabel="ැ"/>
+        <Key android:codes="3539" android:keyLabel="ී"/>
+        <Key android:codes="3540" android:keyLabel="ු"/>
+        <Key android:codes="3545" android:keyLabel="ේ"/>
+        <Key android:codes="3546" android:keyLabel="ෛ"/>
+        <Key android:codes="3550" android:keyLabel="ෞ" android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- Row 5: Bottom -->
+    <!-- Bottom -->
     <Row android:rowEdgeFlags="bottom">
-        <Key android:codes="-2"   android:keyLabel="\?123"  android:keyWidth="18%p" android:keyEdgeFlags="left"/>
-        <Key android:codes="-10"  android:keyLabel="EN"    android:keyWidth="12%p"/>
-        <Key android:codes="-12"  android:keyLabel="த"     android:keyWidth="12%p"/>
-        <Key android:codes="32"   android:keyLabel="space" android:keyWidth="28%p"/>
-        <Key android:codes="46"   android:keyLabel="."     android:keyWidth="10%p"/>
-        <Key android:codes="-4"   android:keyLabel="↵"    android:keyWidth="20%p" android:keyEdgeFlags="right"/>
+        <Key android:codes="-2"  android:keyLabel="\?123" android:keyWidth="15%p" android:keyEdgeFlags="left"/>
+        <Key android:codes="-10" android:keyLabel="🌐"   android:keyWidth="11%p"/>
+        <Key android:codes="-20" android:keyLabel="📋"   android:keyWidth="11%p"/>
+        <Key android:codes="32"  android:keyLabel="space" android:keyWidth="32%p"/>
+        <Key android:codes="3530" android:keyLabel="ං"  android:keyWidth="10%p"/>
+        <Key android:codes="-4"  android:keyLabel="↵"   android:keyWidth="21%p" android:keyEdgeFlags="right"/>
     </Row>
 
 </Keyboard>
