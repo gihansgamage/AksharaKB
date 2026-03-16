@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.*
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
-import android.os.Build
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.GestureDetector
@@ -24,9 +23,6 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     private val keyBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val shinePaint     = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val shadowPaint    = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    // Frosted glass background for the keyboard body (simulates blur)
-    private val bgFrostPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val bgFrostRect    = RectF()
     private val textPaint      = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign      = Paint.Align.CENTER
         typeface       = Typeface.create("sans-serif-medium", Typeface.NORMAL)
@@ -80,11 +76,14 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         setLayerType(LAYER_TYPE_HARDWARE, null)
-        // NOTE: blur-behind is applied at the Window level in MyInputMethodService
-        // using window.setBackgroundBlurRadius() — NOT here, which would blur the keys themselves.
+        // Blur is applied at window level via window.setBackgroundBlurRadius()
+        // called from MyInputMethodService.onWindowShown() — that blurs the
+        // window background (what shows through transparent regions) without
+        // touching the drawn key content.
     }
 
-    fun applyBlurEffect() { /* blur handled at window level */ }
+    fun applyBlurEffect() { /* no-op: blur done at window level */ }
+
 
     // ── Theme ─────────────────────────────────────────────────────
     private data class T(
@@ -159,12 +158,14 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         val W       = width.toFloat()
         val H       = height.toFloat()
 
-        // ── Background: same semi-transparent style as candidate bar ──
-        // #CC = 80% opacity — matches candidate_bar_bg.xml (#CC181A26)
-        // Keyboard body is slightly darker than the bar for visual separation.
-        bgFrostRect.set(0f, 0f, W, H)
-        bgFrostPaint.color = if (isDark()) 0xEE0D0F1A.toInt() else 0xEEDDE6F4.toInt()
-        canvas.drawRect(bgFrostRect, bgFrostPaint)
+        // ── Background: faded-in frosted tint ────────────────────
+        // Background: very low opacity neutral tint over the blurred window bg.
+        // window.setBackgroundBlurRadius (in onWindowShown) does the actual blur.
+        // We just draw a faint tint so keys have something to sit against.
+        // 0x22 = ~13% opacity — barely visible, lets blurred bg dominate.
+        val bgTint = if (isDark()) 0x22000000.toInt() else 0x18FFFFFF.toInt()
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = bgTint }
+        canvas.drawRect(0f, 0f, W, H, bgPaint)
 
         val kb      = keyboard ?: run { super.onDraw(canvas); return }
         val keys    = kb.keys  ?: run { super.onDraw(canvas); return }

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Liquid glass candidate bar — DARK theme
+  Layers (bottom to top):
+  1. Shadow offset layer
+  2. Frosted glass body (semi-transparent dark)
+  3. Top shine gradient (bright → transparent)
+  4. Crisp rim border
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Layer 1: drop shadow (offset down, blurred via radius) -->
+    <item
+        android:left="2dp"
+        android:top="4dp"
+        android:right="2dp"
+        android:bottom="-4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#55000000"/>
+            <corners android:radius="250dp"/>
+        </shape>
+    </item>
+
+    <!-- Layer 2: frosted glass body — 80% opacity dark blue-grey -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#CC1E2030"/>
+            <corners android:radius="250dp"/>
+        </shape>
+    </item>
+
+    <!-- Layer 3: top shine — defined by gradient positions instead of item bounds -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#14FFFFFF"
+                android:centerColor="#00FFFFFF"
+                android:endColor="#00000000"
+                android:centerX="0.5"
+                android:centerY="0.5"
+                android:angle="270"
+                android:type="linear"/>
+            <corners android:radius="250dp"/>
+        </shape>
+    </item>
+
+    <!-- Layer 4: rim border — faint white outline -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000"/>
+            <stroke android:width="0.8dp" android:color="#28FFFFFF"/>
+            <corners android:radius="250dp"/>
+        </shape>
+    </item>
+
+</layer-list>

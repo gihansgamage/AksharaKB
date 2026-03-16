@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Candidate bar background.
+  250dp radius = full pill / capsule shape.
+  Color is set programmatically per theme (dark/light) in MyInputMethodService.
+  This drawable is only the fallback; code overrides with GradientDrawable.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#EE0D0F1A"/>
+    <corners android:radius="250dp"/>
+</shape>

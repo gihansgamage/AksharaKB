@@ -2,11 +2,9 @@ package com.gihansgamage.aksharakb
 
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.BitmapFactory
 import android.inputmethodservice.InputMethodService
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
-import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -28,7 +26,6 @@ class MyInputMethodService : InputMethodService(),
     private var candidatesContainer: LinearLayout? = null
     private var candidatesScroll: HorizontalScrollView? = null
     private var langPillsContainer: LinearLayout? = null
-    private var btnKbMode: TextView? = null
     private var btnSettings: TextView? = null
     private var wordPredictor: WordPredictor? = null
     private var clipboard: KeyboardClipboard? = null
@@ -156,8 +153,6 @@ class MyInputMethodService : InputMethodService(),
         )
     )
 
-    // ── Lifecycle
-
     // ── Lifecycle ─────────────────────────────────────────────────
     override fun onCreate() {
         super.onCreate()
@@ -165,6 +160,19 @@ class MyInputMethodService : InputMethodService(),
         clipboard = KeyboardClipboard(this); prefs?.registerListener(this)
     }
     override fun onDestroy() { prefs?.unregisterListener(this); super.onDestroy() }
+
+    override fun onWindowShown() {
+        super.onWindowShown()
+        // window.setBackgroundBlurRadius blurs the IME window's background region ONLY.
+        // Because the keyboard draws a semi-transparent overlay (not fully opaque),
+        // the blurred background shows through — frosted glass effect, keyboard area only.
+        // This does NOT blur the app content above the keyboard.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                window?.window?.setBackgroundBlurRadius(60)
+            } catch (_: Exception) {}
+        }
+    }
 
     override fun onSharedPreferenceChanged(sp: SharedPreferences?, key: String?) {
         when (key) {
@@ -186,9 +194,11 @@ class MyInputMethodService : InputMethodService(),
         super.onStartInputView(info, restarting)
         // Re-apply candidate bar background every time keyboard appears (works in all apps)
         val v = keyboardView?.parent?.parent as? android.view.View
-        val barView = v?.findViewById<android.view.View>(R.id.candidates_view)?.parent as? android.view.View
-        barView?.setBackgroundColor(
-            if (isDark()) 0xEE0D0F1A.toInt() else 0xEEDDE6F4.toInt()
+        val barView = (keyboardView?.parent as? android.view.View)
+            ?.findViewById<android.view.View>(R.id.candidate_bar)
+        barView?.setBackgroundResource(
+            if (isDark()) R.drawable.candidate_bar_glass_dark
+            else          R.drawable.candidate_bar_glass_light
         )
         // Refresh lang pills and keyboard in case theme changed
         keyboardView?.refreshPrefs()
@@ -197,26 +207,37 @@ class MyInputMethodService : InputMethodService(),
 
     override fun onCreateInputView(): View {
         val v = LayoutInflater.from(this).inflate(R.layout.keyboard_view, null)
-        // Apply theme-correct background to candidate bar
-        val candidateBarView = v.findViewById<android.view.View>(R.id.candidates_view)?.parent as? android.view.View
-        candidateBarView?.setBackgroundColor(
-            if (isDark()) 0xEE0D0F1A.toInt() else 0xEEDDE6F4.toInt()
+        // Bar background — liquid glass drawable (theme-specific)
+        val candidateBarView = v.findViewById<android.view.View>(R.id.candidate_bar)
+        candidateBarView?.setBackgroundResource(
+            if (isDark()) R.drawable.candidate_bar_glass_dark
+            else          R.drawable.candidate_bar_glass_light
         )
+        updateLangIcon(v)
         keyboardView        = v.findViewById(R.id.keyboard_view)
         // Theme-aware colors for candidate bar icons
         val dark = isDark()
         val iconColor   = if (dark) 0xCCFFFFFF.toInt() else 0xCC1A1A2E.toInt()
         val dividerColor = if (dark) 0x28FFFFFF else 0x22000033
-        listOf(R.id.btn_emoji, R.id.btn_kb_mode, R.id.btn_settings).forEach { id ->
+        listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
             v.findViewById<TextView>(id)?.setTextColor(iconColor)
         }
-        // Dividers — find all Views with tag "divider" (set in XML) or by index is fragile
-        // Instead we just set the candidate bar LinearLayout bg above, which covers the bar
+        updateLangIcon(v)
 
         candidatesContainer = v.findViewById(R.id.candidates_container)
         candidatesScroll    = v.findViewById(R.id.candidates_view)
         langPillsContainer  = v.findViewById(R.id.lang_pills_container)
-        btnKbMode           = v.findViewById(R.id.btn_kb_mode)
+
+        // Single language switch icon — tap to cycle languages
+        v.findViewById<TextView>(R.id.btn_lang_single)?.setOnClickListener {
+            vibrateKey()
+            val en  = prefs?.enabledLanguages ?: listOf(KeyboardPreferences.LANG_EN)
+            val cur = prefs?.currentLanguage  ?: KeyboardPreferences.LANG_EN
+            prefs?.currentLanguage = en[(en.indexOf(cur) + 1) % en.size]
+            isSymbols = false; capsState = CapsState.NONE; awaitingZWJ = false
+            phoneticBuffer.clear(); currentInput.clear()
+            setKeyboardLayout(); updateLangIcon(v); updateCandidates("")
+        }
 
         // Emoji button
         v.findViewById<TextView>(R.id.btn_emoji)?.setOnClickListener {
@@ -230,17 +251,7 @@ class MyInputMethodService : InputMethodService(),
             setKeyboardLayout()
         }
 
-        // Keyboard mode button (Wijesekara ↔ Phonetic toggle for SI/TA)
-        v.findViewById<TextView>(R.id.btn_kb_mode)?.setOnClickListener {
-            vibrateKey()
-            val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
-            if (lang == KeyboardPreferences.LANG_SI || lang == KeyboardPreferences.LANG_TA) {
-                val cur = prefs?.sinhalaLayout ?: KeyboardPreferences.LAYOUT_PHONETIC
-                prefs?.sinhalaLayout = if (cur == KeyboardPreferences.LAYOUT_PHONETIC)
-                    KeyboardPreferences.LAYOUT_WIJESEKARA else KeyboardPreferences.LAYOUT_PHONETIC
-                setKeyboardLayout(); updateKbModeButton()
-            }
-        }
+
 
         // Settings (now a TextView with ⚙ symbol)
         v.findViewById<TextView>(R.id.btn_settings)?.setOnClickListener {
@@ -325,15 +336,23 @@ class MyInputMethodService : InputMethodService(),
         }
     }
 
-    private fun updateKbModeButton() {
+    private fun updateKbModeButton() { /* btn_kb_mode removed from layout */ }
+
+    // Update the single language switch icon label
+    private fun updateLangIcon(rootView: android.view.View? = null) {
         val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
-        val phonetic = prefs?.sinhalaLayout == KeyboardPreferences.LAYOUT_PHONETIC
-        btnKbMode?.text = when {
-            lang == KeyboardPreferences.LANG_SI && phonetic  -> "Pho"
-            lang == KeyboardPreferences.LANG_SI && !phonetic -> "Wij"
-            lang == KeyboardPreferences.LANG_TA && phonetic  -> "Pho"
-            lang == KeyboardPreferences.LANG_TA && !phonetic -> "Dir"
-            else -> "ABC"
+        val label = when (lang) {
+            KeyboardPreferences.LANG_SI -> "සිං"
+            KeyboardPreferences.LANG_TA -> "தமி"
+            else                        -> "En"
+        }
+        val dark = isDark()
+        val col  = if (dark) 0xCCFFFFFF.toInt() else 0xCC1A1A2E.toInt()
+        // Try to find the view from the passed root, or from keyboardView parent
+        val root = rootView ?: (keyboardView?.parent as? android.view.View)
+        root?.findViewById<TextView>(R.id.btn_lang_single)?.apply {
+            text = label
+            setTextColor(col)
         }
     }
 
@@ -342,12 +361,6 @@ class MyInputMethodService : InputMethodService(),
 
     private fun applyCurrentPrefs() {
         val p = prefs ?: return; val kv = keyboardView ?: return
-        if (p.theme == KeyboardPreferences.THEME_CUSTOM && p.bgImageUri.isNotEmpty()) {
-            try {
-                val s = contentResolver.openInputStream(Uri.parse(p.bgImageUri))
-                kv.setKeyboardImage(BitmapFactory.decodeStream(s)); s?.close()
-            } catch (_: Exception) { kv.setKeyboardImage(null) }
-        } else { kv.setKeyboardImage(null) }
         kv.isPreviewEnabled = p.showPopupKeys
         kv.refreshPrefs(); setKeyboardLayout()
     }
