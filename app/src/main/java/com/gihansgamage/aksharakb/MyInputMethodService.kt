@@ -15,11 +15,9 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.HorizontalScrollView
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.gihansgamage.aksharakb.data.KeyboardPreferences
-import androidx.core.content.ContextCompat
 
 class MyInputMethodService : InputMethodService(),
     KeyboardView.OnKeyboardActionListener,
@@ -31,6 +29,7 @@ class MyInputMethodService : InputMethodService(),
     private var candidatesScroll: HorizontalScrollView? = null
     private var langPillsContainer: LinearLayout? = null
     private var btnKbMode: TextView? = null
+    private var btnSettings: TextView? = null
     private var wordPredictor: WordPredictor? = null
     private var clipboard: KeyboardClipboard? = null
     private var prefs: KeyboardPreferences? = null
@@ -178,8 +177,8 @@ class MyInputMethodService : InputMethodService(),
             }
         }
 
-        // Settings
-        v.findViewById<ImageButton>(R.id.btn_settings)?.setOnClickListener {
+        // Settings (now a TextView with ⚙ symbol)
+        v.findViewById<TextView>(R.id.btn_settings)?.setOnClickListener {
             vibrateKey()
             packageManager.getLaunchIntentForPackage(packageName)?.apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -201,8 +200,7 @@ class MyInputMethodService : InputMethodService(),
         val enabled = prefs?.enabledLanguages ?: listOf(KeyboardPreferences.LANG_EN)
         val current = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
 
-        // Display label for each language
-        fun langLabel(lang: String): String = when (lang) {
+        fun langLabel(lang: String) = when (lang) {
             KeyboardPreferences.LANG_SI -> "සිං"
             KeyboardPreferences.LANG_TA -> "தமி"
             else -> "En"
@@ -215,14 +213,19 @@ class MyInputMethodService : InputMethodService(),
                 textSize = 13f
                 typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
                 setPadding(dp(10f).toInt(), 0, dp(10f).toInt(), 0)
-                setTextColor(if (isActive) 0xFFFFFFFF.toInt() else 0x88C4B5FD.toInt())
-                // Active pill gets a visible background chip
-                if (isActive) setBackgroundResource(R.drawable.candidate_bar_bg)
-                else setBackgroundColor(0x00000000)
+                setTextColor(if (isActive) 0xFFFFFFFF.toInt() else 0x88FFFFFF.toInt())
+                background = if (isActive) {
+                    android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                        cornerRadius = dp(8f)
+                        setColor(0x44FFFFFF)
+                        setStroke(dp(0.6f).toInt(), 0x55FFFFFF)
+                    }
+                } else null
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.MATCH_PARENT
-                ).also { it.setMargins(2, 8, 2, 8) }
+                ).also { it.setMargins(dp(2f).toInt(), dp(8f).toInt(), dp(2f).toInt(), dp(8f).toInt()) }
                 setOnClickListener {
                     vibrateKey()
                     prefs?.currentLanguage = lang
@@ -417,40 +420,58 @@ class MyInputMethodService : InputMethodService(),
     }
 
     private fun showEmojiPanel(catIndex: Int) {
-        val c = candidatesContainer ?: return; c.removeAllViews()
+        val c = candidatesContainer ?: return
+        c.removeAllViews()
         emojiCategory = catIndex.coerceIn(0, emojiCategories.lastIndex)
 
-        // Category tab icons
-        val catIcons = listOf("😀","👋","❤","🐶","🍎","🚗","⚽","💡")
+        // Category tab icons — use representative emoji for each category tab
+        val catIcons = listOf("😀", "👋", "❤", "🐾", "🍔", "🚗", "⚽", "💡")
         catIcons.forEachIndexed { idx, icon ->
             val isActive = idx == emojiCategory
             c.addView(TextView(this).apply {
-                text = icon; textSize = 20f
-                setPadding(dp(8f).toInt(), 0, dp(8f).toInt(), 0)
+                text = icon
+                textSize = 18f
+                setPadding(dp(9f).toInt(), 0, dp(9f).toInt(), 0)
                 gravity = android.view.Gravity.CENTER_VERTICAL
-                alpha = if (isActive) 1.0f else 0.45f
+                alpha = if (isActive) 1.0f else 0.40f
+                background = if (isActive) {
+                    android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                        cornerRadius = dp(8f)
+                        setColor(0x33FFFFFF)
+                        setStroke(dp(0.5f).toInt(), 0x44FFFFFF)
+                    }
+                } else null
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT
-                ).also { it.setMargins(1, 5, 1, 5) }
-                if (isActive) setBackgroundResource(R.drawable.candidate_bar_bg)
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).also { it.setMargins(dp(1f).toInt(), dp(6f).toInt(), dp(1f).toInt(), dp(6f).toInt()) }
                 setOnClickListener { emojiCategory = idx; showEmojiPanel(idx) }
             })
         }
+
+        // Vertical divider
         c.addView(View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
-                .also { it.setMargins(6, 8, 6, 8) }
-            setBackgroundColor(0x55A78BFA)
+            layoutParams = LinearLayout.LayoutParams(dp(0.5f).toInt(), LinearLayout.LayoutParams.MATCH_PARENT)
+                .also { it.setMargins(dp(5f).toInt(), dp(8f).toInt(), dp(5f).toInt(), dp(8f).toInt()) }
+            setBackgroundColor(0x44FFFFFF)
         })
-        // Emoji chips for selected category — large, easy to tap
+
+        // All emojis for selected category — scrollable
         emojiCategories[emojiCategory].second.forEach { emoji ->
             c.addView(TextView(this).apply {
-                text = emoji; textSize = 22f
-                setPadding(dp(6f).toInt(), 0, dp(6f).toInt(), 0)
+                text = emoji
+                textSize = 24f
+                setPadding(dp(5f).toInt(), 0, dp(5f).toInt(), 0)
                 gravity = android.view.Gravity.CENTER_VERTICAL
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT
-                ).also { it.setMargins(2, 4, 2, 4) }
-                setOnClickListener { currentInputConnection?.commitText(emoji, 1) }
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).also { it.setMargins(dp(1f).toInt(), dp(3f).toInt(), dp(1f).toInt(), dp(3f).toInt()) }
+                setOnClickListener {
+                    currentInputConnection?.commitText(emoji, 1)
+                    // keep panel open so user can pick more
+                }
             })
         }
     }

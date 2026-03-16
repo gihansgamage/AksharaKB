@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Smart Wijesekara — exact spec
-  Gaps = 0dp in XML; visual spacing done in MyKeyboardView (innerPad=2.2dp each side)
-  All shift chars handled in MyInputMethodService.wijShiftMap
-
-  Number row (12 keys): 1 2 3 4 5 6 7 8 9 0 - =
-  Row 1 (10 keys): Q(ු) W(අ) E(ැ) R(ර) T(එ) Y(හ) U(ම) I(ස) O(ද) P(ච)
-  Row 2 (10 keys): A(්) S(ි) D(ා) F(ෙ) G(ට) H(ය) J(ව) K(න) L(ක) ;(ත)
-  Row 3 (⇧+8+⌫):  Z(ං) X(ජ) C(ඩ) V(ඉ) B(බ) N(ප) M(ල) ,(ග) .(.)
+  Smart Wijesekara Layout
+  Changes from previous:
+  - Number row: removed "-" and "=" keys → now exactly 10 keys × 10%p = 100%
+  - Row 3: removed "." key → now ⇧(13%) + 8 keys × 9.25% + ⌫(13%) = 100%
+  - All other rows unchanged
 -->
 <Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
     android:keyWidth="10%p"
@@ -15,24 +12,23 @@
     android:horizontalGap="0dp"
     android:verticalGap="0dp">
 
-    <!-- Number row: 12 keys at ~8.33% each -->
+    <!-- Number row: 10 keys × 10% = 100% (- and = removed) -->
     <Row>
-        <Key android:codes="49"  android:keyLabel="1"  android:popupCharacters="!" android:keyWidth="8%p" android:keyEdgeFlags="left"/>
-        <Key android:codes="50"  android:keyLabel="2"  android:popupCharacters="@" android:keyWidth="8%p"/>
-        <Key android:codes="51"  android:keyLabel="3"  android:popupCharacters="#" android:keyWidth="8%p"/>
-        <Key android:codes="52"  android:keyLabel="4"  android:popupCharacters="$" android:keyWidth="8%p"/>
-        <Key android:codes="53"  android:keyLabel="5"  android:popupCharacters="%" android:keyWidth="8%p"/>
-        <Key android:codes="54"  android:keyLabel="6"  android:popupCharacters="^" android:keyWidth="9%p"/>
-        <Key android:codes="55"  android:keyLabel="7"  android:popupCharacters="&amp;" android:keyWidth="9%p"/>
-        <Key android:codes="56"  android:keyLabel="8"  android:popupCharacters="*" android:keyWidth="9%p"/>
-        <Key android:codes="57"  android:keyLabel="9"  android:popupCharacters="(" android:keyWidth="9%p"/>
-        <Key android:codes="48"  android:keyLabel="0"  android:popupCharacters=")" android:keyWidth="9%p"/>
-        <Key android:codes="45"  android:keyLabel="-"  android:popupCharacters="_" android:keyWidth="9%p"/>
-        <Key android:codes="61"  android:keyLabel="="  android:popupCharacters="+" android:keyWidth="7%p" android:keyEdgeFlags="right"/>
+        <Key android:codes="49" android:keyLabel="1" android:popupCharacters="!" android:keyEdgeFlags="left"/>
+        <Key android:codes="50" android:keyLabel="2" android:popupCharacters="@"/>
+        <Key android:codes="51" android:keyLabel="3" android:popupCharacters="#"/>
+        <Key android:codes="52" android:keyLabel="4" android:popupCharacters="$"/>
+        <Key android:codes="53" android:keyLabel="5" android:popupCharacters="%"/>
+        <Key android:codes="54" android:keyLabel="6" android:popupCharacters="^"/>
+        <Key android:codes="55" android:keyLabel="7" android:popupCharacters="&amp;"/>
+        <Key android:codes="56" android:keyLabel="8" android:popupCharacters="*"/>
+        <Key android:codes="57" android:keyLabel="9" android:popupCharacters="("/>
+        <Key android:codes="48" android:keyLabel="0" android:popupCharacters=")" android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- Row 1: 10 keys × 10% = 100%
-         Q=ු/ූ  W=අ/උ  E=ැ/ෑ  R=ර/ඍ  T=එ/ඒ  Y=හ/ඓ  U=ම/ඖ  I=ස/ෂ  O=ද/ධ  P=ච/ඡ -->
+    <!-- Row 1: 10 × 10% = 100%
+         Normal: ු  අ  ැ  ර  එ  හ  ම  ස  ද  ච
+         Shift:  ූ  උ  ෑ  ඍ  ඒ  ඓ  ඖ  ෂ  ධ  ඡ -->
     <Row>
         <Key android:codes="3540" android:keyLabel="ු" android:popupCharacters="ූ" android:keyEdgeFlags="left"/>
         <Key android:codes="3461" android:keyLabel="අ" android:popupCharacters="උ"/>
@@ -46,8 +42,9 @@
         <Key android:codes="3488" android:keyLabel="ච" android:popupCharacters="ඡ" android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- Row 2: 10 keys × 10% = 100%
-         A=්/ා  S=ි/ී  D=ා/ෘ  F=ෙ/ෆ  G=ට/ඨ  H=ය/්‍ය  J=ව/ළු  K=න/ණ  L=ක/ඛ  ;=ත/ථ -->
+    <!-- Row 2: 10 × 10% = 100%
+         Normal: ්  ි  ා  ෙ  ට  ය  ව  න  ක  ත
+         Shift:  ා  ී  ෘ  ෆ  ඨ  ්‍ය  ළු  ණ  ඛ  ථ -->
     <Row>
         <Key android:codes="3530" android:keyLabel="්" android:popupCharacters="ා ්‍" android:keyEdgeFlags="left"/>
         <Key android:codes="3538" android:keyLabel="ි" android:popupCharacters="ී"/>
@@ -61,29 +58,34 @@
         <Key android:codes="3501" android:keyLabel="ත" android:popupCharacters="ථ" android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- Row 3: ⇧(14%) + 8×9% + .(7%) + ⌫(14%) = 14+72+7+14=107 → adjust
-         ⇧(13%) + Z X C V B N M , . (8 chars × 8.5% = 68%) + ⌫(13%) + .(6%) = 100% -->
+    <!-- Row 3: ⇧(13%) + 8 keys × 9.25% + ⌫(13%) = 13+74+13 = 100%
+         "." key removed; ග gets slightly more width
+         Normal: ං  ජ  ඩ  ඉ  බ  ප  ල  ග
+         Shift:  ඃ  ඣ  ඪ  ඊ  භ  ඵ  ළ  ඝ -->
     <Row>
-        <Key android:codes="-1"  android:keyLabel="⇧"  android:keyWidth="13%p" android:keyEdgeFlags="left" android:isModifier="true" android:isSticky="true"/>
+        <Key android:codes="-1"   android:keyLabel="⇧"
+            android:keyWidth="13%p" android:keyEdgeFlags="left"
+            android:isModifier="true" android:isSticky="true"/>
         <Key android:codes="3458" android:keyLabel="ං"  android:keyWidth="9%p"  android:popupCharacters="ඃ"/>
         <Key android:codes="3490" android:keyLabel="ජ"  android:keyWidth="9%p"  android:popupCharacters="ඣ ඦ"/>
         <Key android:codes="3497" android:keyLabel="ඩ"  android:keyWidth="9%p"  android:popupCharacters="ඪ ඬ"/>
         <Key android:codes="3465" android:keyLabel="ඉ"  android:keyWidth="9%p"  android:popupCharacters="ඊ"/>
         <Key android:codes="3510" android:keyLabel="බ"  android:keyWidth="9%p"  android:popupCharacters="භ"/>
-        <Key android:codes="3508" android:keyLabel="ප"  android:keyWidth="9%p"  android:popupCharacters="ඵ"/>
-        <Key android:codes="3517" android:keyLabel="ල"  android:keyWidth="9%p"  android:popupCharacters="ළ ඹ"/>
-        <Key android:codes="3484" android:keyLabel="ග"  android:keyWidth="7%p"  android:popupCharacters="ඝ ඟ"/>
-        <Key android:codes="46"   android:keyLabel="."  android:keyWidth="6%p"  android:popupCharacters="?"/>
-        <Key android:codes="-5"  android:keyLabel="⌫"  android:keyWidth="13%p" android:keyEdgeFlags="right" android:isRepeatable="true"/>
+        <Key android:codes="3508" android:keyLabel="ප"  android:keyWidth="10%p" android:popupCharacters="ඵ"/>
+        <Key android:codes="3517" android:keyLabel="ල"  android:keyWidth="10%p" android:popupCharacters="ළ ඹ"/>
+        <Key android:codes="3484" android:keyLabel="ග"  android:keyWidth="9%p"  android:popupCharacters="ඝ ඟ"/>
+        <Key android:codes="-5"   android:keyLabel="⌫"
+            android:keyWidth="13%p" android:keyEdgeFlags="right"
+            android:isRepeatable="true"/>
     </Row>
 
-    <!-- Bottom: 18+12+38+12+20=100 -->
+    <!-- Bottom: 18+12+38+12+20 = 100 -->
     <Row android:rowEdgeFlags="bottom">
         <Key android:codes="-2"  android:keyLabel="\?123" android:keyWidth="18%p" android:keyEdgeFlags="left"/>
-        <Key android:codes="44"  android:keyLabel=","   android:keyWidth="12%p"/>
+        <Key android:codes="44"  android:keyLabel=","    android:keyWidth="12%p"/>
         <Key android:codes="32"  android:keyLabel="සිංහල" android:keyWidth="38%p"/>
-        <Key android:codes="46"  android:keyLabel="."   android:keyWidth="12%p"/>
-        <Key android:codes="-4"  android:keyLabel="↵"   android:keyWidth="20%p" android:keyEdgeFlags="right"/>
+        <Key android:codes="46"  android:keyLabel="."    android:keyWidth="12%p"/>
+        <Key android:codes="-4"  android:keyLabel="↵"    android:keyWidth="20%p" android:keyEdgeFlags="right"/>
     </Row>
 
 </Keyboard>
