@@ -1,10 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.AksharaKB" parent="Theme.MaterialComponents.Light.NoActionBar">
+
+    <!-- ── Base (shared attributes) ─────────────────────────────── -->
+    <style name="Theme.AksharaKB.Base" parent="Theme.MaterialComponents.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
-        <item name="android:windowBackground">@color/bg_main</item>
-        <item name="android:statusBarColor">@color/bg_main</item>
-        <item name="android:navigationBarColor">@color/bg_main</item>
+        <item name="switchStyle">@style/GlassSwitch</item>
     </style>
+
+    <!-- ── DARK theme (default) ──────────────────────────────────── -->
+    <style name="Theme.AksharaKB" parent="Theme.AksharaKB.Base">
+        <item name="android:windowBackground">@color/dark_bg</item>
+        <item name="android:statusBarColor">@color/dark_bg</item>
+        <item name="android:navigationBarColor">@color/dark_bg</item>
+        <item name="android:textColorPrimary">@color/dark_text_primary</item>
+        <item name="android:textColorSecondary">@color/dark_text_secondary</item>
+    </style>
+
+    <!-- ── LIGHT theme ───────────────────────────────────────────── -->
+    <style name="Theme.AksharaKB.Light" parent="Theme.AksharaKB.Base">
+        <item name="android:windowBackground">@color/light_bg</item>
+        <item name="android:statusBarColor">@color/light_bg</item>
+        <item name="android:navigationBarColor">@color/light_bg</item>
+        <item name="android:textColorPrimary">@color/light_text_primary</item>
+        <item name="android:textColorSecondary">@color/light_text_secondary</item>
+    </style>
+
+    <!-- ── Switch style ──────────────────────────────────────────── -->
+    <style name="GlassSwitch" parent="Widget.MaterialComponents.CompoundButton.Switch">
+        <item name="thumbTint">@color/white</item>
+        <item name="trackTint">@color/primary</item>
+    </style>
+
 </resources>

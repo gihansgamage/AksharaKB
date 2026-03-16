@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Light theme style overrides.
+  Place in  res/values-night/  (inverted: these are the LIGHT styles, use for non-night mode)
+  OR apply programmatically via SettingsActivity theme switching.
+  These override the dark styles above when light theme is active.
+-->
+<resources>
+
+    <!-- Light glass card — white with subtle shadow -->
+    <style name="GlassCard.Light" parent="GlassCard">
+        <item name="cardBackgroundColor">#FFFFFFFF</item>
+        <item name="cardElevation">2dp</item>
+    </style>
+
+    <style name="SectionLabel.Light" parent="SectionLabel">
+        <item name="android:textColor">#66000000</item>
+    </style>
+
+    <style name="GlassRadio.Light" parent="GlassRadio">
+        <item name="android:textColor">@color/light_text_primary</item>
+        <item name="android:buttonTint">@color/primary</item>
+    </style>
+
+    <style name="GlassCheck.Light" parent="GlassCheck">
+        <item name="android:textColor">@color/light_text_primary</item>
+        <item name="android:buttonTint">@color/primary</item>
+    </style>
+
+    <style name="Divider.Light" parent="Divider">
+        <item name="android:background">#1A000000</item>
+    </style>
+
+    <style name="RowTitle.Light" parent="RowTitle">
+        <item name="android:textColor">@color/light_text_primary</item>
+    </style>
+
+    <style name="RowSubtitle.Light" parent="RowSubtitle">
+        <item name="android:textColor">@color/light_text_secondary</item>
+    </style>
+
+</resources>

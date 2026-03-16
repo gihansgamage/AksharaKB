@@ -9,38 +9,31 @@ class KeyboardPreferences(context: Context) {
         context.getSharedPreferences("aksharakb_prefs", Context.MODE_PRIVATE)
 
     companion object {
-        // Theme
-        const val KEY_THEME           = "keyboard_theme"
-        const val KEY_BG_IMAGE_URI    = "bg_image_uri"
-        const val KEY_SHOW_BORDER     = "show_border"
+        const val KEY_THEME            = "keyboard_theme"
+        const val KEY_BG_IMAGE_URI     = "bg_image_uri"
+        const val KEY_SHOW_BORDER      = "show_border"
+        const val KEY_SINHALA_LAYOUT   = "sinhala_layout"
+        const val KEY_ENABLED_LANGS    = "enabled_languages"
+        const val KEY_CURRENT_LANG     = "current_language"
+        const val KEY_VIBRATE          = "vibrate_on_key"
+        const val KEY_SOUND            = "sound_on_key"
+        const val KEY_KEY_HEIGHT       = "key_height"
+        const val KEY_SHOW_PREDICTIONS = "show_predictions"
+        const val KEY_SHOW_POPUP       = "show_popup_keys"
+        const val KEY_SHOW_NUMPAD      = "show_number_pad"
 
-        // Layout
-        const val KEY_SINHALA_LAYOUT  = "sinhala_layout"
-
-        // Languages
-        const val KEY_ENABLED_LANGS   = "enabled_languages"   // comma-separated
-        const val KEY_CURRENT_LANG    = "current_language"
-
-        // Typing
-        const val KEY_VIBRATE         = "vibrate_on_key"
-        const val KEY_SOUND           = "sound_on_key"
-        const val KEY_KEY_HEIGHT      = "key_height"
-        const val KEY_SHOW_PREDICTIONS= "show_predictions"
-        const val KEY_SHOW_POPUP      = "show_popup_keys"
-        const val KEY_SHOW_NUMPAD     = "show_number_pad"
-
-        // Theme values
-        const val THEME_DEFAULT = "default"
+        // Two themes only
+        const val THEME_LIGHT   = "default"   // kept as "default" for backwards compat
         const val THEME_DARK    = "dark"
-        const val THEME_OCEAN   = "ocean"
-        const val THEME_SUNSET  = "sunset"
-        const val THEME_CUSTOM  = "custom"
+        // Legacy aliases (map to one of the two)
+        const val THEME_DEFAULT = THEME_LIGHT
+        const val THEME_OCEAN   = THEME_DARK
+        const val THEME_SUNSET  = THEME_DARK
+        const val THEME_CUSTOM  = THEME_DARK
 
-        // Layout values
-        const val LAYOUT_PHONETIC    = "phonetic"
-        const val LAYOUT_WIJESEKARA  = "wijesekara"
+        const val LAYOUT_PHONETIC   = "phonetic"
+        const val LAYOUT_WIJESEKARA = "wijesekara"
 
-        // Language codes
         const val LANG_EN = "EN"
         const val LANG_SI = "SI"
         const val LANG_TA = "TA"
@@ -49,7 +42,14 @@ class KeyboardPreferences(context: Context) {
     }
 
     var theme: String
-        get() = prefs.getString(KEY_THEME, THEME_DEFAULT) ?: THEME_DEFAULT
+        get() {
+            val raw = prefs.getString(KEY_THEME, THEME_LIGHT) ?: THEME_LIGHT
+            // Normalise legacy values to the two supported themes
+            return when (raw) {
+                THEME_DARK, "ocean", "sunset", "custom" -> THEME_DARK
+                else -> THEME_LIGHT
+            }
+        }
         set(v) = prefs.edit().putString(KEY_THEME, v).apply()
 
     var bgImageUri: String
@@ -64,7 +64,6 @@ class KeyboardPreferences(context: Context) {
         get() = prefs.getString(KEY_SINHALA_LAYOUT, LAYOUT_PHONETIC) ?: LAYOUT_PHONETIC
         set(v) = prefs.edit().putString(KEY_SINHALA_LAYOUT, v).apply()
 
-    /** Comma-separated list of active language codes, e.g. "EN,SI" */
     var enabledLanguages: List<String>
         get() {
             val raw = prefs.getString(KEY_ENABLED_LANGS, "$LANG_EN,$LANG_SI,$LANG_TA") ?: "$LANG_EN,$LANG_SI,$LANG_TA"
@@ -100,12 +99,9 @@ class KeyboardPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_SHOW_NUMPAD, true)
         set(v) = prefs.edit().putBoolean(KEY_SHOW_NUMPAD, v).apply()
 
-    /** Register a preferences-changed listener */
-    fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+    fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) =
         prefs.registerOnSharedPreferenceChangeListener(listener)
-    }
 
-    fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+    fun unregisterListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) =
         prefs.unregisterOnSharedPreferenceChangeListener(listener)
-    }
 }

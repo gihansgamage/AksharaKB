@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Semi-transparent glass candidate bar — floats above wallpaper -->
+<!-- Background color is applied programmatically in MyInputMethodService
+     for correct light/dark theming. This is just a transparent fallback. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#CC181A26"/>
+    <solid android:color="#00000000"/>
 </shape>

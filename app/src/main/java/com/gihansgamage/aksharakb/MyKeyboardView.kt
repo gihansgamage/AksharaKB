@@ -107,10 +107,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         val isLight: Boolean
     )
 
-    private fun isDark() =
-        prefs.theme == KeyboardPreferences.THEME_DARK ||
-                prefs.theme == KeyboardPreferences.THEME_OCEAN ||
-                prefs.theme == KeyboardPreferences.THEME_SUNSET
+    private fun isDark() = prefs.theme == KeyboardPreferences.THEME_DARK
 
     private fun buildTheme() = if (isDark()) T(
         // ── DARK — deep charcoal keys on transparent background ───
@@ -166,7 +163,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         // #CC = 80% opacity — matches candidate_bar_bg.xml (#CC181A26)
         // Keyboard body is slightly darker than the bar for visual separation.
         bgFrostRect.set(0f, 0f, W, H)
-        bgFrostPaint.color = if (isDark()) 0xCC111422.toInt() else 0xCCE0E8F4.toInt()
+        bgFrostPaint.color = if (isDark()) 0xEE0D0F1A.toInt() else 0xEEDDE6F4.toInt()
         canvas.drawRect(bgFrostRect, bgFrostPaint)
 
         val kb      = keyboard ?: run { super.onDraw(canvas); return }

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -60,41 +59,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
-                        <RadioButton android:id="@+id/rbThemeDefault" style="@style/GlassRadio" android:text="☀️  Default (Light)"/>
+                        <RadioButton
+                            android:id="@+id/rbThemeLight"
+                            style="@style/GlassRadio"
+                            android:text="☀  Light"/>
                         <View style="@style/Divider"/>
-                        <RadioButton android:id="@+id/rbThemeDark"    style="@style/GlassRadio" android:text="🌑  Dark"/>
-                        <View style="@style/Divider"/>
-                        <RadioButton android:id="@+id/rbThemeOcean"   style="@style/GlassRadio" android:text="🌊  Ocean Blue"/>
-                        <View style="@style/Divider"/>
-                        <RadioButton android:id="@+id/rbThemeSunset"  style="@style/GlassRadio" android:text="🌅  Sunset Purple"/>
+                        <RadioButton
+                            android:id="@+id/rbThemeDark"
+                            style="@style/GlassRadio"
+                            android:text="◑  Dark"/>
 
                     </RadioGroup>
-
-                    <View style="@style/Divider"/>
-
-                    <Button
-                        android:id="@+id/btnSetBg"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:text="🖼️  Custom Background Image"
-                        android:textAllCaps="false"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:background="@drawable/btn_glass_outline"
-                        android:layout_marginTop="10dp"
-                        android:stateListAnimator="@null"/>
-
-                    <Button
-                        android:id="@+id/btnClearBg"
-                        android:layout_width="match_parent"
-                        android:layout_height="44dp"
-                        android:text="Clear Custom Background"
-                        android:textAllCaps="false"
-                        android:textColor="#AAFFFFFF"
-                        android:textSize="13sp"
-                        android:background="@android:color/transparent"
-                        android:stateListAnimator="@null"/>
-
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -107,25 +82,16 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Choose which languages appear when cycling with the 🌐 key"
+                        android:text="Choose which languages appear in the candidate bar"
                         android:textSize="12sp"
                         android:textColor="#AAFFFFFF"
                         android:layout_marginBottom="12dp"/>
 
-                    <CheckBox
-                        android:id="@+id/cbLangEn"
-                        style="@style/GlassCheck"
-                        android:text="🇬🇧  English"/>
+                    <CheckBox android:id="@+id/cbLangEn" style="@style/GlassCheck" android:text="  English"/>
                     <View style="@style/Divider"/>
-                    <CheckBox
-                        android:id="@+id/cbLangSi"
-                        style="@style/GlassCheck"
-                        android:text="🇱🇰  Sinhala (සිංහල)"/>
+                    <CheckBox android:id="@+id/cbLangSi" style="@style/GlassCheck" android:text="  Sinhala (සිංහල)"/>
                     <View style="@style/Divider"/>
-                    <CheckBox
-                        android:id="@+id/cbLangTa"
-                        style="@style/GlassCheck"
-                        android:text="🇱🇰  Tamil (தமிழ்)"/>
+                    <CheckBox android:id="@+id/cbLangTa" style="@style/GlassCheck" android:text="  Tamil (தமிழ்)"/>
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -135,22 +101,13 @@
 
             <androidx.cardview.widget.CardView style="@style/GlassCard">
                 <LinearLayout style="@style/CardInner">
-
                     <RadioGroup
                         android:id="@+id/rgSinhalaLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-
-                        <RadioButton
-                            android:id="@+id/rbPhonetic"
-                            style="@style/GlassRadio"
-                            android:text="Phonetic — type as you pronounce"/>
+                        <RadioButton android:id="@+id/rbPhonetic"    style="@style/GlassRadio" android:text="Phonetic — type as you pronounce"/>
                         <View style="@style/Divider"/>
-                        <RadioButton
-                            android:id="@+id/rbWijesekara"
-                            style="@style/GlassRadio"
-                            android:text="Wijesekara — standard Sri Lankan layout"/>
-
+                        <RadioButton android:id="@+id/rbWijesekara"  style="@style/GlassRadio" android:text="Wijesekara — standard Sri Lankan layout"/>
                     </RadioGroup>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -161,7 +118,6 @@
             <androidx.cardview.widget.CardView style="@style/GlassCard">
                 <LinearLayout style="@style/CardInner">
 
-                    <!-- Border -->
                     <LinearLayout style="@style/RowLayout">
                         <LinearLayout style="@style/RowText">
                             <TextView style="@style/RowTitle" android:text="Show Key Borders"/>
@@ -169,6 +125,19 @@
                         </LinearLayout>
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/swBorder"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <View style="@style/Divider"/>
+
+                    <LinearLayout style="@style/RowLayout">
+                        <LinearLayout style="@style/RowText">
+                            <TextView style="@style/RowTitle" android:text="Number Row"/>
+                            <TextView style="@style/RowSubtitle" android:text="Show 1–0 row at top of keyboard"/>
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/swNumberPad"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>
@@ -188,7 +157,7 @@
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
                             android:gravity="center_vertical"
-                            android:layout_marginBottom="8dp">
+                            android:layout_marginBottom="10dp">
                             <TextView style="@style/RowTitle"
                                 android:layout_width="0dp"
                                 android:layout_weight="1"
@@ -247,8 +216,8 @@
 
                     <LinearLayout style="@style/RowLayout">
                         <LinearLayout style="@style/RowText">
-                            <TextView style="@style/RowTitle" android:text="Word &amp; Emoji Predictions"/>
-                            <TextView style="@style/RowSubtitle" android:text="Suggestions bar above keyboard"/>
+                            <TextView style="@style/RowTitle" android:text="Word Predictions"/>
+                            <TextView style="@style/RowSubtitle" android:text="Suggestions above keyboard"/>
                         </LinearLayout>
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/swPredictions"
@@ -261,23 +230,10 @@
                     <LinearLayout style="@style/RowLayout">
                         <LinearLayout style="@style/RowText">
                             <TextView style="@style/RowTitle" android:text="Popup Key Preview"/>
-                            <TextView style="@style/RowSubtitle" android:text="Show pop-up on key press"/>
+                            <TextView style="@style/RowSubtitle" android:text="Show enlarged letter on press"/>
                         </LinearLayout>
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/swPopupKeys"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <View style="@style/Divider"/>
-
-                    <LinearLayout style="@style/RowLayout">
-                        <LinearLayout style="@style/RowText">
-                            <TextView style="@style/RowTitle" android:text="Number Row"/>
-                            <TextView style="@style/RowSubtitle" android:text="Show numbers at top of keyboard"/>
-                        </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/swNumberPad"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
                     </LinearLayout>

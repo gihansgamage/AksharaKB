@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Dark theme app background — deep blue-black gradient -->
+<!-- Light theme app background — clean cool white gradient -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <gradient
-        android:startColor="#0D0F1A"
-        android:centerColor="#11141F"
-        android:endColor="#0A0C15"
+        android:startColor="#F0F4FC"
+        android:centerColor="#E8EFF8"
+        android:endColor="#DDE6F4"
         android:angle="160"
         android:type="linear"/>
 </shape>

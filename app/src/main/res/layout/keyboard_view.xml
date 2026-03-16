@@ -5,12 +5,12 @@
     android:orientation="vertical"
     android:background="@android:color/transparent">
 
-    <!-- Candidate / action bar -->
+    <!-- Candidate / action bar — background set programmatically for theme -->
     <LinearLayout
+        android:id="@+id/candidate_bar"
         android:layout_width="match_parent"
         android:layout_height="46dp"
         android:orientation="horizontal"
-        android:background="@drawable/candidate_bar_bg"
         android:gravity="center_vertical"
         android:paddingStart="4dp"
         android:paddingEnd="4dp">
@@ -29,11 +29,11 @@
         <View
             android:layout_width="0.5dp"
             android:layout_height="18dp"
-            android:background="#28FFFFFF"
+            android:background="#33808080"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"/>
 
-        <!-- Word suggestions (scrollable, fills remaining space) -->
+        <!-- Word suggestion chips -->
         <HorizontalScrollView
             android:id="@+id/candidates_view"
             android:layout_width="0dp"
@@ -56,28 +56,26 @@
         <View
             android:layout_width="0.5dp"
             android:layout_height="18dp"
-            android:background="#28FFFFFF"
+            android:background="#33808080"
             android:layout_marginStart="2dp"
             android:layout_marginEnd="2dp"/>
 
-        <!-- Emoji toggle  ☺ U+263A -->
+        <!-- Emoji toggle ☺ -->
         <TextView
             android:id="@+id/btn_emoji"
             android:layout_width="40dp"
             android:layout_height="46dp"
             android:text="&#9786;"
             android:textSize="17sp"
-            android:textColor="#AAFFFFFF"
             android:gravity="center"
             android:background="@android:color/transparent"/>
 
-        <!-- Divider -->
         <View
             android:layout_width="0.5dp"
             android:layout_height="18dp"
-            android:background="#28FFFFFF"/>
+            android:background="#33808080"/>
 
-        <!-- Keyboard mode  -->
+        <!-- Keyboard mode -->
         <TextView
             android:id="@+id/btn_kb_mode"
             android:layout_width="40dp"
@@ -85,31 +83,28 @@
             android:text="Wij"
             android:textSize="11sp"
             android:textStyle="bold"
-            android:textColor="#AAFFFFFF"
             android:gravity="center"
             android:fontFamily="sans-serif-medium"
             android:background="@android:color/transparent"/>
 
-        <!-- Divider -->
         <View
             android:layout_width="0.5dp"
             android:layout_height="18dp"
-            android:background="#28FFFFFF"/>
+            android:background="#33808080"/>
 
-        <!-- Settings  ⚙ U+2699 -->
+        <!-- Settings ⚙ -->
         <TextView
             android:id="@+id/btn_settings"
             android:layout_width="40dp"
             android:layout_height="46dp"
             android:text="&#9881;"
             android:textSize="17sp"
-            android:textColor="#AAFFFFFF"
             android:gravity="center"
             android:background="@android:color/transparent"/>
 
     </LinearLayout>
 
-    <!-- The keyboard — no outer border, spacing all in MyKeyboardView.kt -->
+    <!-- Keyboard -->
     <com.gihansgamage.aksharakb.MyKeyboardView
         android:id="@+id/keyboard_view"
         android:layout_width="match_parent"

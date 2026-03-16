@@ -33,6 +33,8 @@ class MyInputMethodService : InputMethodService(),
     private var wordPredictor: WordPredictor? = null
     private var clipboard: KeyboardClipboard? = null
     private var prefs: KeyboardPreferences? = null
+    private fun isDark() = prefs?.theme == KeyboardPreferences.THEME_DARK
+
 
     private enum class CapsState { NONE, SHIFT, CAPS_LOCK }
     private var capsState      = CapsState.NONE
@@ -180,9 +182,37 @@ class MyInputMethodService : InputMethodService(),
     }
 
     // ── View ──────────────────────────────────────────────────────
+    override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(info, restarting)
+        // Re-apply candidate bar background every time keyboard appears (works in all apps)
+        val v = keyboardView?.parent?.parent as? android.view.View
+        val barView = v?.findViewById<android.view.View>(R.id.candidates_view)?.parent as? android.view.View
+        barView?.setBackgroundColor(
+            if (isDark()) 0xEE0D0F1A.toInt() else 0xEEDDE6F4.toInt()
+        )
+        // Refresh lang pills and keyboard in case theme changed
+        keyboardView?.refreshPrefs()
+        rebuildLangPills()
+    }
+
     override fun onCreateInputView(): View {
         val v = LayoutInflater.from(this).inflate(R.layout.keyboard_view, null)
+        // Apply theme-correct background to candidate bar
+        val candidateBarView = v.findViewById<android.view.View>(R.id.candidates_view)?.parent as? android.view.View
+        candidateBarView?.setBackgroundColor(
+            if (isDark()) 0xEE0D0F1A.toInt() else 0xEEDDE6F4.toInt()
+        )
         keyboardView        = v.findViewById(R.id.keyboard_view)
+        // Theme-aware colors for candidate bar icons
+        val dark = isDark()
+        val iconColor   = if (dark) 0xCCFFFFFF.toInt() else 0xCC1A1A2E.toInt()
+        val dividerColor = if (dark) 0x28FFFFFF else 0x22000033
+        listOf(R.id.btn_emoji, R.id.btn_kb_mode, R.id.btn_settings).forEach { id ->
+            v.findViewById<TextView>(id)?.setTextColor(iconColor)
+        }
+        // Dividers — find all Views with tag "divider" (set in XML) or by index is fragile
+        // Instead we just set the candidate bar LinearLayout bg above, which covers the bar
+
         candidatesContainer = v.findViewById(R.id.candidates_container)
         candidatesScroll    = v.findViewById(R.id.candidates_view)
         langPillsContainer  = v.findViewById(R.id.lang_pills_container)
@@ -257,6 +287,12 @@ class MyInputMethodService : InputMethodService(),
             else -> "En"
         }
 
+        val dark = isDark()
+        val textActive   = if (dark) 0xFFFFFFFF.toInt() else 0xFF1A1A2E.toInt()
+        val textInactive = if (dark) 0x88FFFFFF.toInt() else 0x88000033.toInt()
+        val pillFill     = if (dark) 0x44FFFFFF           else 0x44000066
+        val pillStroke   = if (dark) 0x55FFFFFF           else 0x44000066
+
         enabled.forEach { lang ->
             val isActive = lang == current
             val pill = TextView(this).apply {
@@ -264,13 +300,13 @@ class MyInputMethodService : InputMethodService(),
                 textSize = 13f
                 typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
                 setPadding(dp(10f).toInt(), 0, dp(10f).toInt(), 0)
-                setTextColor(if (isActive) 0xFFFFFFFF.toInt() else 0x88FFFFFF.toInt())
+                setTextColor(if (isActive) textActive else textInactive)
                 background = if (isActive) {
                     android.graphics.drawable.GradientDrawable().apply {
                         shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                         cornerRadius = dp(8f)
-                        setColor(0x44FFFFFF)
-                        setStroke(dp(0.6f).toInt(), 0x55FFFFFF)
+                        setColor(pillFill)
+                        setStroke(dp(0.6f).toInt(), pillStroke)
                     }
                 } else null
                 layoutParams = LinearLayout.LayoutParams(
@@ -659,7 +695,7 @@ class MyInputMethodService : InputMethodService(),
     private fun addChip(container: LinearLayout, text: String, onClick: () -> Unit) {
         container.addView(TextView(this).apply {
             this.text = text; textSize = 14f; setPadding(18, 0, 18, 0)
-            setTextColor(if (prefs?.theme in listOf(KeyboardPreferences.THEME_DARK, KeyboardPreferences.THEME_OCEAN, KeyboardPreferences.THEME_SUNSET)) 0xFFEEDDFF.toInt() else 0xFF1E0A3C.toInt())
+            setTextColor(if (isDark()) 0xFFEEEEFF.toInt() else 0xFF1A1A2E.toInt())
             setBackgroundResource(R.drawable.candidate_bar_bg); gravity = android.view.Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT).also { it.setMargins(3, 5, 3, 5) }
             setOnClickListener { onClick() }
