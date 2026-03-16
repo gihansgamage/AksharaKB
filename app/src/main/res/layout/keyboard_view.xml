@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Root has NO horizontal padding — keyboard must span full screen width.
-  The candidate bar has its own horizontal margins so it floats as a pill.
-  MyKeyboardView draws its own gap (2.6dp) so edge keys are never clipped.
--->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@android:color/transparent"
-    android:paddingTop="6dp">
+    android:background="@android:color/transparent">
 
-    <!-- ── Candidate bar — floats as a rounded pill, same bg as keyboard ── -->
+    <!-- Candidate bar — floating pill -->
     <LinearLayout
         android:id="@+id/candidate_bar"
         android:layout_width="match_parent"
@@ -22,10 +16,11 @@
         android:paddingEnd="6dp"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
+        android:layout_marginTop="6dp"
         android:layout_marginBottom="4dp"
-        android:background="@drawable/candidate_bar_pill">
+        android:background="@drawable/candidate_bar_glass_dark">
 
-        <!-- Single language switch icon — shows current language, tap to cycle -->
+        <!-- Single language switch -->
         <TextView
             android:id="@+id/btn_lang_single"
             android:layout_width="36dp"
@@ -36,7 +31,7 @@
             android:gravity="center"
             android:background="@android:color/transparent"/>
 
-        <!-- Language pills container — hidden but kept for IME compat -->
+        <!-- Language pills container — hidden, kept for IME compat -->
         <LinearLayout
             android:id="@+id/lang_pills_container"
             android:layout_width="0dp"
@@ -51,7 +46,7 @@
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"/>
 
-        <!-- Word predictions (scrollable, fills remaining space) -->
+        <!-- Word predictions -->
         <HorizontalScrollView
             android:id="@+id/candidates_view"
             android:layout_width="0dp"
@@ -76,7 +71,7 @@
             android:layout_marginStart="2dp"
             android:layout_marginEnd="2dp"/>
 
-        <!-- Emoji ☺ U+263A -->
+        <!-- Emoji ☺ -->
         <TextView
             android:id="@+id/btn_emoji"
             android:layout_width="38dp"
@@ -93,7 +88,7 @@
             android:layout_height="18dp"
             android:background="#33FFFFFF"/>
 
-        <!-- Settings ⚙ U+2699 -->
+        <!-- Settings ⚙ -->
         <TextView
             android:id="@+id/btn_settings"
             android:layout_width="38dp"
@@ -106,7 +101,7 @@
 
     </LinearLayout>
 
-    <!-- ── Keyboard — full width, no padding on container ── -->
+    <!-- Keyboard -->
     <com.gihansgamage.aksharakb.MyKeyboardView
         android:id="@+id/keyboard_view"
         android:layout_width="match_parent"

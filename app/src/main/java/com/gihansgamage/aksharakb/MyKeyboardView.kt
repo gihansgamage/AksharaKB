@@ -159,13 +159,22 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         val H       = height.toFloat()
 
         // ── Background: faded-in frosted tint ────────────────────
-        // Background: very low opacity neutral tint over the blurred window bg.
-        // window.setBackgroundBlurRadius (in onWindowShown) does the actual blur.
-        // We just draw a faint tint so keys have something to sit against.
-        // 0x22 = ~13% opacity — barely visible, lets blurred bg dominate.
-        val bgTint = if (isDark()) 0x22000000.toInt() else 0x18FFFFFF.toInt()
-        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = bgTint }
-        canvas.drawRect(0f, 0f, W, H, bgPaint)
+        // Soft top fade — transparent → slightly tinted over top 20dp.
+        // This feathers the hard window-blur edge into a smooth transition,
+        // matching the iOS-style blurred keyboard appearance.
+        // No solid background is drawn — the window blur shows through.
+        if (H > 0) {
+            val fadeH    = dp(20f).coerceAtMost(H * 0.18f)
+            val bgColor  = if (isDark()) 0x00000000 else 0x00FFFFFF
+            val midColor = if (isDark()) 0x18000000 else 0x10000000
+            val fadePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+            fadePaint.shader = LinearGradient(
+                0f, 0f, 0f, fadeH,
+                intArrayOf(bgColor, midColor),
+                null, Shader.TileMode.CLAMP)
+            canvas.drawRect(0f, 0f, W, fadeH, fadePaint)
+            fadePaint.shader = null
+        }
 
         val kb      = keyboard ?: run { super.onDraw(canvas); return }
         val keys    = kb.keys  ?: run { super.onDraw(canvas); return }

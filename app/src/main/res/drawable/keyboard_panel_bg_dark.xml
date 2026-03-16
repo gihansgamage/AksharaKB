@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Frosted glass pill — dark theme. No shine layer, no border. Just the tinted fill. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#CC1E2030"/>
+    <corners android:radius="250dp"/>
+</shape>

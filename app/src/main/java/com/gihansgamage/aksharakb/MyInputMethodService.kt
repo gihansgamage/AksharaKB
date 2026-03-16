@@ -196,10 +196,13 @@ class MyInputMethodService : InputMethodService(),
         val v = keyboardView?.parent?.parent as? android.view.View
         val barView = (keyboardView?.parent as? android.view.View)
             ?.findViewById<android.view.View>(R.id.candidate_bar)
-        barView?.setBackgroundResource(
-            if (isDark()) R.drawable.candidate_bar_glass_dark
-            else          R.drawable.candidate_bar_glass_light
-        )
+        // Re-apply candidate bar glass background
+        (keyboardView?.parent as? android.view.View)
+            ?.findViewById<android.view.View>(R.id.candidate_bar)
+            ?.setBackgroundResource(
+                if (isDark()) R.drawable.candidate_bar_glass_dark
+                else          R.drawable.candidate_bar_glass_light
+            )
         // Refresh lang pills and keyboard in case theme changed
         keyboardView?.refreshPrefs()
         rebuildLangPills()
@@ -207,18 +210,19 @@ class MyInputMethodService : InputMethodService(),
 
     override fun onCreateInputView(): View {
         val v = LayoutInflater.from(this).inflate(R.layout.keyboard_view, null)
-        // Bar background — liquid glass drawable (theme-specific)
-        val candidateBarView = v.findViewById<android.view.View>(R.id.candidate_bar)
-        candidateBarView?.setBackgroundResource(
-            if (isDark()) R.drawable.candidate_bar_glass_dark
-            else          R.drawable.candidate_bar_glass_light
-        )
+        // Candidate bar: frosted glass pill, no hard border
+        v.findViewById<android.view.View>(R.id.candidate_bar)
+            ?.setBackgroundResource(
+                if (isDark()) R.drawable.candidate_bar_glass_dark
+                else          R.drawable.candidate_bar_glass_light
+            )
+        // Root keyboard container: transparent — blur comes from window
+        v.setBackgroundColor(0x00000000)
         updateLangIcon(v)
         keyboardView        = v.findViewById(R.id.keyboard_view)
         // Theme-aware colors for candidate bar icons
         val dark = isDark()
-        val iconColor   = if (dark) 0xCCFFFFFF.toInt() else 0xCC1A1A2E.toInt()
-        val dividerColor = if (dark) 0x28FFFFFF else 0x22000033
+        val iconColor = if (dark) 0xCCFFFFFF.toInt() else 0xCC333355.toInt()
         listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
             v.findViewById<TextView>(id)?.setTextColor(iconColor)
         }
