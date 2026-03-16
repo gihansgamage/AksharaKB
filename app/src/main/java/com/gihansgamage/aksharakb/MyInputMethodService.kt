@@ -222,6 +222,8 @@ class MyInputMethodService : InputMethodService(),
 
         keyboardView?.setOnKeyboardActionListener(this)
 
+        // Blur behind is applied at window level in onWindowShown()
+
         // Emoji swipe: left = next page, right = prev page
         keyboardView?.onEmojiSwipe = { direction ->
             val maxPage = ((emojiCategories[emojiCategory].second.size - 1) / 30)

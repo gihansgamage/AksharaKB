@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.*
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
+import android.os.Build
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.GestureDetector
@@ -15,17 +16,17 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     private var keyboardBg: Bitmap? = null
     private var prefs = KeyboardPreferences(context)
 
-    // Emoji mode state
     var isEmojiMode: Boolean = false
     var activeCategoryTab: Int = 0
-    // Callback for emoji swipe: +1 = next page, -1 = prev page
     var onEmojiSwipe: ((direction: Int) -> Unit)? = null
 
-    private val bgPaint        = Paint(Paint.ANTI_ALIAS_FLAG)
     private val keyBodyPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val keyBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val shinePaint     = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val shadowPaint    = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val keyBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    // Frosted glass background for the keyboard body (simulates blur)
+    private val bgFrostPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val bgFrostRect    = RectF()
     private val textPaint      = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign      = Paint.Align.CENTER
         typeface       = Typeface.create("sans-serif-medium", Typeface.NORMAL)
@@ -46,22 +47,17 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     private var blurPaint: Paint? = null
     private var lastBlurR = -1f
 
-    // ── Swipe gesture detector for emoji keyboard paging ──────────
+    // ── Swipe for emoji paging ────────────────────────────────────
     private val gestureDetector = GestureDetector(context,
         object : GestureDetector.SimpleOnGestureListener() {
-            private val SWIPE_MIN_DISTANCE = dp(50f)
-            private val SWIPE_MIN_VELOCITY = 100f
-
             override fun onFling(
                 e1: MotionEvent?, e2: MotionEvent,
                 velocityX: Float, velocityY: Float
             ): Boolean {
                 if (!isEmojiMode) return false
-                val e1x = e1?.x ?: return false
-                val dx  = e2.x - e1x
-                if (Math.abs(dx) < SWIPE_MIN_DISTANCE) return false
-                if (Math.abs(velocityX) < SWIPE_MIN_VELOCITY) return false
-                // Swipe right = prev page, swipe left = next page
+                val dx = e2.x - (e1?.x ?: return false)
+                if (Math.abs(dx) < dp(50f)) return false
+                if (Math.abs(velocityX) < 100f) return false
                 onEmojiSwipe?.invoke(if (dx < 0) 1 else -1)
                 return true
             }
@@ -78,29 +74,37 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     private fun dp(v: Float) = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, v, resources.displayMetrics)
 
-    // ── Static height: enforce 5-row keyboard height ──────────────
-    // We clamp to the tallest measured height so all layouts look identical.
-    private var cachedHeight = 0
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        val h = measuredHeight
-        if (h > cachedHeight) cachedHeight = h
-        if (cachedHeight > 0) setMeasuredDimension(measuredWidth, cachedHeight)
-    }
+    // ── NO cached height — let layout shrink naturally when number row removed ──
+    // onMeasure uses default KeyboardView behaviour
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         setLayerType(LAYER_TYPE_HARDWARE, null)
+        // NOTE: blur-behind is applied at the Window level in MyInputMethodService
+        // using window.setBackgroundBlurRadius() — NOT here, which would blur the keys themselves.
     }
+
+    fun applyBlurEffect() { /* blur handled at window level */ }
 
     // ── Theme ─────────────────────────────────────────────────────
     private data class T(
-        val bg1: Int, val bg2: Int,
-        val key: Int, val keySpec: Int, val keyActive: Int,
-        val border: Int, val borderSpec: Int, val borderActive: Int,
-        val shadowCol: Int, val shineHi: Int, val shineLo: Int,
-        val textNorm: Int, val textSpec: Int, val textHint: Int, val textActive: Int,
-        val capsLineCol: Int, val isLight: Boolean
+        // Keys — fully opaque fills
+        val key: Int,           // normal key body
+        val keySpec: Int,       // shift/del/mode
+        val keyActive: Int,     // shift when held
+        // Border — thin crisp outline
+        val border: Int,
+        val borderActive: Int,
+        // Shadow
+        val shadow: Int,
+        // Shine — very faint top highlight
+        val shineHi: Int,
+        // Text
+        val textNorm: Int,
+        val textSpec: Int,
+        val textActive: Int,
+        val capsLineCol: Int,
+        val isLight: Boolean
     )
 
     private fun isDark() =
@@ -109,21 +113,35 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                 prefs.theme == KeyboardPreferences.THEME_SUNSET
 
     private fun buildTheme() = if (isDark()) T(
-        bg1 = 0xFF11131C.toInt(), bg2 = 0xFF0C0E16.toInt(),
-        key = 0xFF2B2E40.toInt(), keySpec = 0xFF222434.toInt(), keyActive = 0xFF394480.toInt(),
-        border = 0x1EFFFFFF, borderSpec = 0x2AFFFFFF, borderActive = 0xDD6680FF.toInt(),
-        shadowCol = 0xFF000000.toInt(), shineHi = 0x0AFFFFFF, shineLo = 0x00FFFFFF,
-        textNorm = 0xFFFFFFFF.toInt(), textSpec = 0xFFEEEEFF.toInt(),
-        textHint = 0x50A0A0CC, textActive = 0xFFAABBFF.toInt(),
-        capsLineCol = 0xFF6677EE.toInt(), isLight = false
+        // ── DARK — deep charcoal keys on transparent background ───
+        key          = 0xCC252836.toInt(),   // 80% opacity dark blue-grey
+        keySpec      = 0xCC1E2030.toInt(),   // 80% opacity special
+        keyActive    = 0xDD3A4880.toInt(),   // 87% opacity active shift
+        // Border: single faint white rim
+        border       = 0x28FFFFFF,
+        borderActive = 0xCC8899EE.toInt(),
+        // Shadow: offset drop
+        shadow       = 0xAA000000.toInt(),
+        shineHi      = 0x08FFFFFF,           // barely visible, no white line
+        textNorm     = 0xFFFFFFFF.toInt(),
+        textSpec     = 0xFFDDDDFF.toInt(),
+        textActive   = 0xFFAABBFF.toInt(),
+        capsLineCol  = 0xFF7788EE.toInt(),
+        isLight      = false
     ) else T(
-        bg1 = 0xFFECF1FB.toInt(), bg2 = 0xFFE0E8F5.toInt(),
-        key = 0xFFFFFFFF.toInt(), keySpec = 0xFFF0F3FA.toInt(), keyActive = 0xFFCDD8FF.toInt(),
-        border = 0x00FFFFFF, borderSpec = 0x00FFFFFF, borderActive = 0x554466CC,
-        shadowCol = 0xFF8899BB.toInt(), shineHi = 0x10FFFFFF, shineLo = 0x00FFFFFF,
-        textNorm = 0xFF3A3A50.toInt(), textSpec = 0xFF2E2E48.toInt(),
-        textHint = 0x60777790, textActive = 0xFF2233AA.toInt(),
-        capsLineCol = 0xFF3344CC.toInt(), isLight = true
+        // ── LIGHT — white keys on transparent background ──────────
+        key          = 0xD8FFFFFF.toInt(),   // 85% opacity white
+        keySpec      = 0xD8F0F2F9.toInt(),   // 85% opacity off-white
+        keyActive    = 0xDDD0DAFF.toInt(),   // 87% opacity active shift
+        border       = 0x00000000,           // no border — shadow only
+        borderActive = 0x554466BB,
+        shadow       = 0x30000044.toInt(),
+        shineHi      = 0x0AFFFFFF,
+        textNorm     = 0xFF3A3A52.toInt(),
+        textSpec     = 0xFF2C2C48.toInt(),
+        textActive   = 0xFF2233AA.toInt(),
+        capsLineCol  = 0xFF3344CC.toInt(),
+        isLight      = true
     )
 
     private fun isSpecial(code: Int) =
@@ -144,10 +162,12 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         val W       = width.toFloat()
         val H       = height.toFloat()
 
-        bgPaint.shader = LinearGradient(0f, 0f, 0f, H,
-            intArrayOf(t.bg1, t.bg2), null, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, W, H, bgPaint)
-        bgPaint.shader = null
+        // ── Background: same semi-transparent style as candidate bar ──
+        // #CC = 80% opacity — matches candidate_bar_bg.xml (#CC181A26)
+        // Keyboard body is slightly darker than the bar for visual separation.
+        bgFrostRect.set(0f, 0f, W, H)
+        bgFrostPaint.color = if (isDark()) 0xCC111422.toInt() else 0xCCE0E8F4.toInt()
+        canvas.drawRect(bgFrostRect, bgFrostPaint)
 
         val kb      = keyboard ?: run { super.onDraw(canvas); return }
         val keys    = kb.keys  ?: run { super.onDraw(canvas); return }
@@ -158,12 +178,12 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         val basePx  = keyH * 0.42f
         val shifted = kb.isShifted
 
-        // Blur shadow paint
-        val blurR = if (t.isLight) dp(5f) else dp(3.5f)
+        // Blur shadow — recreate only when blur radius changes
+        val blurR = if (t.isLight) dp(5f) else dp(3f)
         if (blurPaint == null || lastBlurR != blurR) {
             blurPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style      = Paint.Style.FILL
-                color      = if (t.isLight) 0x30000040.toInt() else 0x90000000.toInt()
+                color      = t.shadow
                 maskFilter = BlurMaskFilter(blurR, BlurMaskFilter.Blur.NORMAL)
             }
             lastBlurR = blurR
@@ -185,12 +205,11 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
             val ri  = kx + kw - gap
             val bot = ky + kh - gap
 
-            // ── Shadow ────────────────────────────────────────────
-            val offY = if (t.isLight) dp(3f) else dp(2f)
-            rrect.set(l + dp(1f), top + offY, ri - dp(1f), bot + offY)
+            // ── 1. Drop shadow ────────────────────────────────────
+            rrect.set(l + dp(1f), top + dp(2f), ri - dp(1f), bot + dp(2f))
             canvas.drawRoundRect(rrect, r, r, blurP)
 
-            // ── Key body ──────────────────────────────────────────
+            // ── 2. Key body ───────────────────────────────────────
             rrect.set(l, top, ri, bot)
             keyBodyPaint.color = when {
                 active -> t.keyActive
@@ -199,35 +218,31 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
             }
             canvas.drawRoundRect(rrect, r, r, keyBodyPaint)
 
-            // ── Shine gradient ────────────────────────────────────
-            val shineEnd = top + (bot - top) * 0.45f
-            shinePaint.shader = LinearGradient(0f, top, 0f, shineEnd,
-                intArrayOf(t.shineHi, t.shineLo), null, Shader.TileMode.CLAMP)
-            rrect2.set(l + dp(2f), top + dp(1f), ri - dp(2f), shineEnd)
-            canvas.drawRoundRect(rrect2, r * 0.7f, r * 0.7f, shinePaint)
+            // ── 4. Very faint top shine (liquid surface) ──────────
+            val shineH = (bot - top) * 0.38f
+            shinePaint.shader = LinearGradient(
+                0f, top, 0f, top + shineH,
+                intArrayOf(t.shineHi, 0x00FFFFFF), null, Shader.TileMode.CLAMP)
+            rrect2.set(l + dp(2f), top, ri - dp(2f), top + shineH)
+            canvas.drawRoundRect(rrect2, r * 0.8f, r * 0.8f, shinePaint)
             shinePaint.shader = null
 
-            // ── Border ────────────────────────────────────────────
-            val borderCol = when {
-                active -> t.borderActive
-                spec   -> t.borderSpec
-                else   -> t.border
-            }
-            if (Color.alpha(borderCol) > 0) {
+            // ── 5. Crisp border ────────────────────────────────────
+            if (Color.alpha(t.border) > 0 || active) {
                 rrect.set(l, top, ri, bot)
-                keyBorderPaint.color       = borderCol
-                keyBorderPaint.strokeWidth = dp(0.8f)
+                keyBorderPaint.color       = if (active) t.borderActive else t.border
+                keyBorderPaint.strokeWidth = dp(0.7f)
                 canvas.drawRoundRect(rrect, r, r, keyBorderPaint)
             }
 
-            // ── Caps indicator ────────────────────────────────────
+            // ── 6. Caps indicator ─────────────────────────────────
             if (active) {
                 capsLinePaint.color       = t.capsLineCol
-                capsLinePaint.strokeWidth = dp(2.5f)
+                capsLinePaint.strokeWidth = dp(2f)
                 canvas.drawLine(l + r, top + dp(3f), ri - r, top + dp(3f), capsLinePaint)
             }
 
-            // ── Labels ────────────────────────────────────────────
+            // ── 7. Labels ─────────────────────────────────────────
             val rawLabel = key.label?.toString()
                 ?: if (code > 31) code.toChar().toString() else ""
 
@@ -240,24 +255,21 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                         canvas.drawText(rawLabel, kx + kw / 2f, ey, textPaint)
                     }
                 }
-
                 isCategoryTab(code) -> {
                     val tabIdx = (-code) - 51
-                    textPaint.textSize = kh * 0.50f
+                    textPaint.textSize = kh * 0.48f
                     textPaint.color    = t.textNorm
                     textPaint.alpha    = if (tabIdx == activeCategoryTab) 0xFF else 0x66
                     val ty = ky + kh * 0.56f - (textPaint.descent() + textPaint.ascent()) / 2f
                     canvas.drawText(rawLabel, kx + kw / 2f, ty, textPaint)
                     textPaint.alpha = 0xFF
                 }
-
                 isNavKey(code) -> {
                     textPaint.color    = t.textSpec
-                    textPaint.textSize = basePx * 0.70f
+                    textPaint.textSize = basePx * 0.68f
                     val ny = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
                     canvas.drawText(rawLabel, kx + kw / 2f, ny, textPaint)
                 }
-
                 spec -> {
                     val lbl = when (code) {
                         Keyboard.KEYCODE_DELETE      -> "⌫"
@@ -269,21 +281,18 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     if (lbl.isNotEmpty()) {
                         textPaint.color    = if (active) t.textActive else t.textSpec
                         textPaint.textSize = when {
-                            lbl.length > 3 -> basePx * 0.58f
-                            else           -> basePx * 0.78f
+                            lbl.length > 3 -> basePx * 0.56f
+                            else           -> basePx * 0.76f
                         }
                         val sy = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
                         canvas.drawText(lbl, kx + kw / 2f, sy, textPaint)
                     }
                 }
-
                 shifted -> {
-                    // ── Shift active: show shifted char large, no hint ─
+                    // Shift active: show shifted variant large, no hint
                     val popupRaw   = key.popupCharacters?.toString()?.trim() ?: ""
                     val popupShift = popupRaw.split(" ").firstOrNull()?.trim() ?: ""
-                    val autoShift  = if (popupShift.isEmpty()) shiftedLabel(rawLabel) else ""
-                    val sv         = popupShift.ifEmpty { autoShift }.ifEmpty { rawLabel }
-
+                    val sv         = popupShift.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel }
                     textPaint.color    = t.textNorm
                     var sz = when {
                         sv.length > 5 -> basePx * 0.46f
@@ -293,17 +302,12 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     }
                     textPaint.textSize = sz
                     val maxW = (ri - l) * 0.82f
-                    if (textPaint.measureText(sv) > maxW) {
-                        sz *= maxW / textPaint.measureText(sv); textPaint.textSize = sz
-                    }
+                    if (textPaint.measureText(sv) > maxW) { sz *= maxW / textPaint.measureText(sv); textPaint.textSize = sz }
                     val sy = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
                     canvas.drawText(sv, kx + kw / 2f, sy, textPaint)
-                    // NO hint drawn when shifted
                 }
-
                 else -> {
-                    // ── Normal (not shifted): show main label only, NO hint ──
-                    // Requirement: don't show the shift variant as a hint in normal mode
+                    // Normal: main label only, centered, no hint
                     if (rawLabel.isNotEmpty()) {
                         textPaint.color = t.textNorm
                         var sz = when {
@@ -315,14 +319,11 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                         textPaint.textSize = sz
                         val maxW = (ri - l) * 0.82f
                         if (textPaint.measureText(rawLabel) > maxW) {
-                            sz *= maxW / textPaint.measureText(rawLabel)
-                            textPaint.textSize = sz
+                            sz *= maxW / textPaint.measureText(rawLabel); textPaint.textSize = sz
                         }
-                        // Centered — no hint so always perfectly centered
                         val labelY = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
                         canvas.drawText(rawLabel, kx + kw / 2f, labelY, textPaint)
                     }
-                    // ── HINT REMOVED: never show shift variant when not shifted ──
                 }
             }
         }
