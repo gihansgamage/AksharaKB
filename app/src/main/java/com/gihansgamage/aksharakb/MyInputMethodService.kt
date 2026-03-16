@@ -119,17 +119,42 @@ class MyInputMethodService : InputMethodService(),
         "j" to "ஜ","g" to "க","d" to "ட","b" to "ப","q" to "க"
     )
 
-    // ── Emoji ─────────────────────────────────────────────────────
+    // ── Emoji categories — 1605 total across 10 categories ─────────
     private val emojiCategories = listOf(
-        "Faces" to listOf("😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠","💩","🤡","👹","👺","👻","👽","👾","🤖"),
-        "Hands" to listOf("👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍","💅","🤳","💪","🦾","🦵","🦶","👂","🦻","👃","🧠","🦷","🦴","👀","👁","👅","👄","💋","👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","🧓","👴","👵","🙍","🙎","🙅","🙆","💁","🙋","🧏","🙇","🤦","🤷"),
-        "Hearts" to listOf("❤","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣","💕","💞","💓","💗","💖","💘","💝","💟","☮","✝","☪","🕉","✡","🔯","🕎","☯","☦","⚠","🚫","❌","✅","💯","✨","🌟","⭐","🔥","💫","🎉","🎊","🎈","🎁","🏆","🥇","🥈","🥉"),
-        "Animals" to listOf("🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🐛","🦋","🐌","🐞","🐜","🦟","🦗","🦂","🐢","🐍","🦎","🦖","🦕","🐙","🦑","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆","🦓","🦍","🦧","🦣","🐘","🦛","🦏","🐪","🐫","🦒","🦘"),
-        "Food" to listOf("🍎","🍊","🍋","🍇","🍓","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶","🥕","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🥞","🧇","🥓","🥩","🍗","🍖","🌭","🍔","🍟","🍕","🌮","🌯","🥙","🧆","🍝","🍜","🍲","🍛","🍣","🍱","🥟","🍤","🍙","🍚","🍘","🍥","🥮","🍢","🧁","🍰","🎂","🍮","🍭","🍬","🍫","🍿","🍩","🍪","☕","🍵","🧃","🥤","🧋","🍶","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🧉","🍾"),
-        "Travel" to listOf("🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍","🛵","🚲","🛴","🛹","🚏","⛽","✈","🚀","🛸","🚁","⛵","🚢","🛥","🛳","⛴","🚂","🚃","🚄","🚅","🚆","🚇","🚈","🚉","🚊","🚝","🚞","🗺","🏔","⛰","🌋","🗻","🏕","🏖","🏜","🏝","🏞","🏟","🏛","🏗","🏘","🏚","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰"),
-        "Sports" to listOf("⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🥍","🏑","🏏","🪃","⛳","🏹","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🎱","🎮","🕹","🎰","🎲","🧩","🧸","♟","🪆","🪅","🎭","🎨","🎤","🎧","🎼","🎵","🎶","🎷","🪗","🎸","🎹","🎺","🎻","🪘","🥁","🎬","🎥"),
-        "Objects" to listOf("💡","🔦","🕯","🪔","🧯","💰","💵","💴","💶","💷","💸","💳","🪙","💹","📈","📉","📊","📋","📌","📍","✂","🗃","🗑","🔒","🔓","🔑","🗝","🔨","🪓","⛏","⚒","🛠","⚔","🔫","🛡","📱","💻","🖥","⌨","🖱","💾","💿","📀","📞","☎","📺","📷","📸","📹","🎥","📚","📖","📰","🗞","📝","✏","🖊","🖋","📏","📐","📎","🖇","📁","📂","🗓","📅","📆","🗒","🗃","🗄")
+        "😀 Smileys" to listOf(
+            "😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","🫠","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🫢","🫣","🤫","🤔","🫡","🤐","🤨","😐","😑","😶","😶‍🌫","😏","😒","🙄","😬","😮‍💨","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","😵‍💫","🤯","🤠","🥳","🥸","😎","🤓","🧐","😕","🫤","😟","🙁","😮","😯","😲","😳","🥺","🥹","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"
+        ),
+        "👋 People" to listOf(
+            "👋","🤚","🖐","✋","🖖","🫱","🫲","🫳","🫴","🫷","🫸","👌","🤌","🤏","✌","🤞","🫰","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝","🫵","👍","👎","✊","👊","🤛","🤜","👏","🙌","🫶","👐","🤲","🤝","🙏","✍","💅","🤳","💪","🦾","🦿","🦵","🦶","👂","🦻","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","🫦","👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","🧓","👴","👵","🙍","🙎","🙅","🙆","💁","🙋","🧏","🙇","🤦","🤷","👮","🕵","💂","🥷","👷","🫅","🤴","👸","👳","👲","🧕","🤵","👰","🤰","🫃","🫄","🤱","👼","🎅","🤶","🦸","🦹","🧙","🧝","🧛","🧟","🧌","🧞","🧜","🧚","👫","👬","👭","💏","💑","👨‍👩‍👦","👨‍👩‍👧","👩‍👦","👩‍👧","👨‍👦","👨‍👧"
+        ),
+        "❤ Hearts" to listOf(
+            "❤","🩷","🧡","💛","💚","💙","🩵","💜","🖤","🩶","🤍","🤎","💔","❤‍🔥","❤‍🩹","❣","💕","💞","💓","💗","💖","💘","💝","💟","☮","✝","☪","🪯","🕉","☸","✡","🔯","🕎","☯","☦","🛐","⛎","♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓","⚛","🉑","☢","☣","📴","📳","🈶","🈚","🈸","🈺","🈷","✴","🆚","💮","🉐","㊙","㊗","🈴","🈵","🈹","🈲","🅰","🅱","🆎","🆑","🅾","🆘","⛔","📛","🚫","💯","💢","♨","🚷","🚯","🚳","🚱","🔞","📵","🚭","❗","❕","❓","❔","‼","⁉","🔅","🔆","〽","⚠","🔱","⚜","🔰","♻","✅","🈯","💹","❎","🌐","🌀","➿","🌁"
+        ),
+        "🐾 Animals" to listOf(
+            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐻‍❄","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤","🐣","🐥","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🫏","🐝","🪱","🐛","🦋","🐌","🐞","🐜","🪲","🦟","🦗","🪳","🕷","🦂","🐢","🐍","🦎","🦖","🦕","🐙","🦑","🪼","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆","🦓","🫎","🦍","🦧","🦣","🐘","🦛","🦏","🐪","🐫","🦒","🦘","🦬","🐃","🐂","🐄","🐎","🐖","🐏","🐑","🦙","🐐","🦌","🐕","🐩","🦮","🐈","🪶","🐓","🦃","🦤","🦚","🦜","🦢","🪿","🦩","🕊","🐇","🦝","🦨","🦡","🦫","🦦","🦥","🐁","🐀","🐿","🦔","🐾","🐉","🐲","🌵","🎄","🌲","🌳","🌴","🪵","🌱","🌿","☘","🍀","🎍","🪴","🎋","🍃","🍂","🍁","🪺","🪹","🍄","🌾","💐","🌷","🪷","🌹","🥀","🌺","🌸","🌼","🌻","🌞","🌝","🌛","🌜","🌚","🌕","🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌙","🌟","⭐","🌠","🌌","☁","⛅","🌈","⚡","❄","☃","⛄","🌊","💧","💦","🫧","🌀"
+        ),
+        "🍔 Food" to listOf(
+            "🍏","🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶","🫑","🌽","🥕","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🧈","🥞","🧇","🥓","🥩","🍗","🍖","🦴","🌭","🍔","🍟","🍕","🫓","🫔","🌮","🌯","🥙","🧆","🥘","🍲","🫕","🍜","🍝","🍢","🍣","🍤","🍙","🍚","🍱","🥟","🦪","🥡","🍛","🥗","🥫","🧁","🍰","🎂","🍮","🍭","🍬","🍫","🍿","🍩","🍪","🌰","🥜","🍯","🧃","🥤","🧋","☕","🍵","🫖","🍶","🍺","🍻","🥂","🍷","🫗","🥃","🍸","🍹","🧉","🍾","🧊","🥄","🍴","🍽","🥢","🫙"
+        ),
+        "🚗 Travel" to listOf(
+            "🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍","🛵","🛺","🚲","🛴","🛹","🛼","🚏","🛣","🛤","⛽","🛞","🚨","🚥","🚦","🛑","🚧","⚓","🛟","⛵","🛶","🚤","🛳","⛴","🛥","🚢","✈","🛩","🛫","🛬","🪂","💺","🚁","🚟","🚠","🚡","🛰","🚀","🛸","🪐","🌍","🌎","🌏","🧭","🏔","⛰","🌋","🗺","🏕","🏖","🏜","🏝","🏞","🏟","🏛","🏗","🧱","🪨","🛖","🏘","🏚","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰","💒","🗼","🗽","⛪","🕌","🛕","🕍","⛩","🕋","⛲","⛺","🌁","🌃","🏙","🌄","🌅","🌆","🌇","🌉","🗾","🎑","🌐"
+        ),
+        "⚽ Sports" to listOf(
+            "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🥍","🏑","🏏","🪃","🥅","⛳","🪁","🛝","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🏋","🤸","⛹","🤺","🤾","🏌","🏇","🧘","🏄","🏊","🤽","🚣","🧗","🚵","🚴","🏆","🥇","🥈","🥉","🏅","🎖","🏵","🎗","🎫","🎟","🎪","🤹","🎭","🩰","🎨","🎬","🎤","🎧","🎼","🎵","🎶","🎷","🪗","🎸","🎹","🎺","🎻","🥁","🪘","🎙","🎚","🎛","📻","🎮","🕹","🎲","♟","🎰","🎠","🎡","🎢"
+        ),
+        "💡 Objects" to listOf(
+            "📱","💻","🖥","🖨","⌨","🖱","🖲","💽","💾","💿","📀","🎥","📽","🎞","📞","☎","📟","📠","📺","📷","📸","📹","📼","🔍","🔎","🕯","💡","🔦","🏮","🪔","📔","📕","📖","📗","📘","📙","📚","📓","📒","📃","📄","📑","🗒","🗓","📆","📅","📇","📈","📉","📊","📋","📌","📍","✂","🗃","🗄","🗑","🔒","🔓","🔏","🔐","🔑","🗝","🔨","🪓","⛏","⚒","🛠","🗡","⚔","🔫","🪃","🛡","🪚","🔧","🪛","🔩","⚙","🗜","⚖","🪜","🔗","⛓","🪝","🧲","🔮","🧿","🪬","🧸","🪅","🎊","🎉","🪆","🎎","🎐","🎏","🎀","🎁","🎗","🎟","🎫","🏷","📦","📫","📪","📬","📭","📮","🗳","✏","✒","🖋","🖊","📝","💼","📁","📂","🗂","🗞","📰","📏","📐","✂","🧹","🧺","🧻","🪣","🧴","🧷","🧽","🧼","🫧","🪥","🪒","🛒","🚪","🪞","🪟","🛏","🛋","🪑","🚽","🪠","🚿","🛁","🪤","💈","💊","💉","🩸","🧬","🦠","🧫","🧪","🌡","🔭","🩺","🩻","🩹","🩼","💎","💍","👑","👒","🎓","🪖","⛑","💄","💋","👓","🕶","🥽","🌂","☂","🧵","🪡","🧶","🪢","👔","👕","👖","🧣","🧤","🧥","🧦","👗","👘","🥻","🩱","🩲","🩳","👙","👚","👛","👜","👝","🎒","🧳","👞","👟","🥾","🥿","👠","👡","🩰","👢","🌂","☂"
+        ),
+        "🔣 Symbols" to listOf(
+            "🔴","🟠","🟡","🟢","🔵","🟣","🟤","⚫","⚪","🟥","🟧","🟨","🟩","🟦","🟪","🟫","⬛","⬜","◼","◻","◾","◽","▪","▫","🔶","🔷","🔸","🔹","🔺","🔻","💠","🔘","🔳","🔲","🔈","🔇","🔉","🔊","📢","📣","🔔","🔕","♾","⚕","♻","⚜","🔰","✅","❎","🆗","🆙","🆕","🆒","🆓","🔝","🆖","🆎","🆑","🅾","🆘","🔃","🔄","🔙","🔚","🔛","🔜","🔝","⬆","↗","➡","↘","⬇","↙","⬅","↖","↕","↔","↩","↪","⤴","⤵","🔀","🔁","🔂","▶","⏩","⏭","⏯","◀","⏪","⏮","🔼","⏫","🔽","⏬","⏸","⏹","⏺","⏏","🎦","📶","📳","📴","💹","🔱","❇","✳","0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟","💯","🔠","🔡","🔤"
+        ),
+        "🏳 Flags" to listOf(
+            "🏴‍☠","🏳","🏳‍🌈","🏳‍⚧","🏴","🚩","🎌","🏁",
+            "🇦🇫","🇦🇱","🇩🇿","🇦🇩","🇦🇴","🇦🇬","🇦🇷","🇦🇲","🇦🇺","🇦🇹","🇦🇿","🇧🇸","🇧🇭","🇧🇩","🇧🇧","🇧🇾","🇧🇪","🇧🇿","🇧🇯","🇧🇹","🇧🇴","🇧🇦","🇧🇼","🇧🇷","🇧🇳","🇧🇬","🇧🇫","🇧🇮","🇰🇭","🇨🇲","🇨🇦","🇨🇻","🇨🇫","🇹🇩","🇨🇱","🇨🇳","🇨🇴","🇰🇲","🇨🇬","🇨🇩","🇨🇰","🇨🇷","🇭🇷","🇨🇺","🇨🇾","🇨🇿","🇩🇰","🇩🇯","🇩🇲","🇩🇴","🇪🇨","🇪🇬","🇸🇻","🇬🇶","🇪🇷","🇪🇪","🇸🇿","🇪🇹","🇪🇺","🇫🇯","🇫🇮","🇫🇷","🇬🇦","🇬🇲","🇬🇪","🇩🇪","🇬🇭","🇬🇷","🇬🇩","🇬🇹","🇬🇳","🇬🇼","🇬🇾","🇭🇹","🇭🇳","🇭🇰","🇭🇺","🇮🇸","🇮🇳","🇮🇩","🇮🇷","🇮🇶","🇮🇪","🇮🇱","🇮🇹","🇯🇲","🇯🇵","🇯🇴","🇰🇿","🇰🇪","🇰🇮","🇽🇰","🇰🇼","🇰🇬","🇱🇦","🇱🇻","🇱🇧","🇱🇸","🇱🇷","🇱🇾","🇱🇮","🇱🇹","🇱🇺","🇲🇬","🇲🇼","🇲🇾","🇲🇻","🇲🇱","🇲🇹","🇲🇭","🇲🇷","🇲🇺","🇲🇽","🇫🇲","🇲🇩","🇲🇨","🇲🇳","🇲🇪","🇲🇦","🇲🇿","🇲🇲","🇳🇦","🇳🇷","🇳🇵","🇳🇱","🇳🇿","🇳🇮","🇳🇪","🇳🇬","🇳🇴","🇴🇲","🇵🇰","🇵🇼","🇵🇸","🇵🇦","🇵🇬","🇵🇾","🇵🇪","🇵🇭","🇵🇱","🇵🇹","🇵🇷","🇶🇦","🇷🇴","🇷🇺","🇷🇼","🇼🇸","🇸🇲","🇸🇹","🇸🇦","🇸🇳","🇷🇸","🇸🇨","🇸🇱","🇸🇬","🇸🇰","🇸🇮","🇸🇧","🇸🇴","🇿🇦","🇸🇸","🇪🇸","🇱🇰","🇸🇩","🇸🇷","🇸🇪","🇨🇭","🇸🇾","🇹🇼","🇹🇯","🇹🇿","🇹🇭","🇹🇱","🇹🇬","🇹🇴","🇹🇹","🇹🇳","🇹🇷","🇹🇲","🇹🇻","🇺🇬","🇺🇦","🇦🇪","🇬🇧","🇺🇸","🇺🇾","🇺🇿","🇻🇺","🇻🇦","🇻🇪","🇻🇳","🇾🇪","🇿🇲","🇿🇼"
+        )
     )
+
+    // ── Lifecycle
 
     // ── Lifecycle ─────────────────────────────────────────────────
     override fun onCreate() {
@@ -196,10 +221,24 @@ class MyInputMethodService : InputMethodService(),
         }
 
         keyboardView?.setOnKeyboardActionListener(this)
+
+        // Emoji swipe: left = next page, right = prev page
+        keyboardView?.onEmojiSwipe = { direction ->
+            val maxPage = ((emojiCategories[emojiCategory].second.size - 1) / 30)
+            emojiPage = when {
+                direction > 0 -> if (emojiPage < maxPage) emojiPage + 1 else 0
+                else          -> if (emojiPage > 0) emojiPage - 1 else maxPage
+            }
+            emojiTapSlot = 0
+            populateEmojiKeys()
+            keyboardView?.invalidateAllKeys()
+        }
         applyCurrentPrefs()
         rebuildLangPills()
         updateKbModeButton()
         updateCandidates("")
+        // Auto-cap on field start for English
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
         return v
     }
 
@@ -280,12 +319,23 @@ class MyInputMethodService : InputMethodService(),
         val phonetic = p.sinhalaLayout == KeyboardPreferences.LAYOUT_PHONETIC
         isPhoneticMode = (lang == KeyboardPreferences.LANG_SI && phonetic) ||
                 (lang == KeyboardPreferences.LANG_TA && phonetic)
+        val numPad = p.showNumberPad
         val xmlId = when {
             isEmoji   -> R.xml.emoji_keyboard
             isSymbols -> R.xml.symbols
-            lang == KeyboardPreferences.LANG_SI -> if (phonetic) R.xml.sinhala_phonetic else R.xml.wijesekara
-            lang == KeyboardPreferences.LANG_TA -> if (phonetic) R.xml.tamil_phonetic   else R.xml.tamil
-            else -> if (p.showNumberPad) R.xml.qwerty else R.xml.qwerty_no_numbers
+            lang == KeyboardPreferences.LANG_SI -> when {
+                phonetic && numPad  -> R.xml.sinhala_phonetic
+                phonetic && !numPad -> R.xml.sinhala_phonetic_no_numbers
+                !phonetic && numPad -> R.xml.wijesekara
+                else                -> R.xml.wijesekara_no_numbers
+            }
+            lang == KeyboardPreferences.LANG_TA -> when {
+                phonetic && numPad  -> R.xml.tamil_phonetic
+                phonetic && !numPad -> R.xml.tamil_phonetic_no_numbers
+                !phonetic && numPad -> R.xml.tamil
+                else                -> R.xml.tamil   // tamil direct has no number row already
+            }
+            else -> if (numPad) R.xml.qwerty else R.xml.qwerty_no_numbers
         }
         keyboard = Keyboard(this, xmlId)
         keyboardView?.keyboard = keyboard
@@ -323,7 +373,7 @@ class MyInputMethodService : InputMethodService(),
         var emojiIdx = 0
         for (key in keys) {
             val code = key.codes.firstOrNull() ?: 0
-            if (code == -60) {
+            if (code == -70) {
                 val emoji = pageEmojis.getOrNull(emojiIdx) ?: ""
                 key.label = emoji
                 if (emoji.isNotBlank()) emojiGrid.add(emoji)
@@ -339,27 +389,16 @@ class MyInputMethodService : InputMethodService(),
 
         when (primaryCode) {
             // ── Emoji keyboard navigation ─────────────────────
-            in -58..-51 -> {
-                // Category tab tapped (codes -51 to -58 → category index 0-7)
+            in -60..-51 -> {
+                // Category tab tapped (codes -51 to -60 → category index 0-9)
                 emojiCategory = (-primaryCode) - 51
                 emojiPage = 0
                 populateEmojiKeys()
                 keyboardView?.activeCategoryTab = emojiCategory
                 keyboardView?.invalidateAllKeys()
             }
-            -59 -> {
-                // Previous page
-                val maxPage = ((emojiCategories[emojiCategory].second.size - 1) / 30)
-                emojiPage = if (emojiPage > 0) emojiPage - 1 else maxPage
-                emojiTapSlot = 0; populateEmojiKeys(); keyboardView?.invalidateAllKeys()
-            }
-            -61 -> {
-                // Next page
-                val maxPage = ((emojiCategories[emojiCategory].second.size - 1) / 30)
-                emojiPage = if (emojiPage < maxPage) emojiPage + 1 else 0
-                emojiTapSlot = 0; populateEmojiKeys(); keyboardView?.invalidateAllKeys()
-            }
-            -60 -> {
+            // -61/-62 arrow keys removed — swipe to page instead
+            -70 -> {
                 // Emoji key tapped. All -60 keys share the same code so we use
                 // emojiTapSlot to track which one. emojiGrid holds current page emojis in order.
                 val emoji = emojiGrid.getOrNull(emojiTapSlot) ?: ""
@@ -475,10 +514,64 @@ class MyInputMethodService : InputMethodService(),
     }
 
     private fun handleDirect(code: Int, ic: android.view.inputmethod.InputConnection) {
+        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+        val isEnglish = lang == KeyboardPreferences.LANG_EN
+
         var ch = code.toChar()
+
+        // English auto-caps: if shift is active, uppercase the letter
         if (capsState != CapsState.NONE && ch.isLetter()) ch = ch.uppercaseChar()
-        ic.commitText(ch.toString(), 1); currentInput.append(ch); updateCandidates(currentInput.toString())
-        if (capsState == CapsState.SHIFT) { capsState = CapsState.NONE; keyboard?.isShifted = false; keyboardView?.invalidateAllKeys() }
+        ic.commitText(ch.toString(), 1)
+        currentInput.append(ch)
+        updateCandidates(currentInput.toString())
+
+        // After typing one letter in SHIFT mode → reset to NONE
+        if (capsState == CapsState.SHIFT && ch.isLetter()) {
+            capsState = CapsState.NONE
+            keyboard?.isShifted = false
+            keyboardView?.invalidateAllKeys()
+        }
+
+        // English auto-caps: after sentence-ending punctuation + space,
+        // automatically activate SHIFT so next letter starts capitalized
+        if (isEnglish && !isSymbols) {
+            val textBefore = ic.getTextBeforeCursor(3, 0)?.toString() ?: ""
+            val shouldCap  = when {
+                currentInput.isEmpty()                          -> true  // very start
+                textBefore.endsWith(". ")                       -> true
+                textBefore.endsWith("? ")                       -> true
+                textBefore.endsWith("! ")                       -> true
+                textBefore.endsWith("\n")         -> true
+                textBefore.length <= 1 && ch == ' '            -> false
+                else                                            -> false
+            }
+            if (shouldCap && capsState == CapsState.NONE && !ch.isLetter()) {
+                // Only auto-cap on next LETTER key, not on space itself
+            } else if (shouldCap && capsState == CapsState.NONE && ch == ' ') {
+                // Check if prev non-space char was sentence end
+                val prevText = ic.getTextBeforeCursor(4, 0)?.toString()?.trimEnd() ?: ""
+                if (prevText.endsWith(".") || prevText.endsWith("?") || prevText.endsWith("!")) {
+                    capsState = CapsState.SHIFT
+                    keyboard?.isShifted = true
+                    keyboardView?.invalidateAllKeys()
+                }
+            }
+        }
+    }
+
+    // Check if English keyboard should auto-cap (e.g. after field focus or sentence end)
+    private fun checkAutoCapEnglish() {
+        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+        if (lang != KeyboardPreferences.LANG_EN || isSymbols || isEmoji) return
+        if (capsState != CapsState.NONE) return  // already shifted
+        val ic = currentInputConnection ?: return
+        val before = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+        if (before.isEmpty()) {
+            // Start of field — auto cap
+            capsState = CapsState.SHIFT
+            keyboard?.isShifted = true
+            keyboardView?.invalidateAllKeys()
+        }
     }
 
     private fun tryPhoneticConvert(lang: String) {

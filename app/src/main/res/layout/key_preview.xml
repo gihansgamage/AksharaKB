@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Key press preview popup.
+  NO background — just a large zoomed letter floating above the key.
+  The text colour adapts to theme via the IME's isPreviewEnabled setting.
+-->
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:minWidth="48dp"
+    android:minHeight="48dp"
     android:gravity="center"
-    android:background="@drawable/key_preview_bg"
-    android:textSize="28sp"
+    android:background="@android:color/transparent"
+    android:textSize="32sp"
+    android:textColor="#FFFFFFFF"
     android:textStyle="bold"
-    android:textColor="#FFE9D5FF"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp"/>
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
+    android:shadowColor="#88000000"
+    android:shadowDx="0"
+    android:shadowDy="2"
+    android:shadowRadius="4"/>

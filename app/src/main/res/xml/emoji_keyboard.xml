@@ -1,77 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Emoji keyboard layout.
-  8 category tab keys across the top row.
-  Then 3 rows × 10 emoji keys = 30 visible emoji slots.
-  The IME dynamically updates key labels and codes when category changes.
-  Code -50 = emoji category tab press.
-  Code -60 = emoji key press (handled via keyLabel text).
-  Gap = 0dp, all spacing in MyKeyboardView.
+  Emoji keyboard — matches exact total height of other 5-row keyboards.
+  5 rows total:
+    Row 1 (tabs):    36dp × 1 = 36dp
+    Rows 2-4 (emojis): 46dp × 3 = 138dp
+    Row 5 (nav):     44dp × 1 = 44dp
+  Total = 258dp  (same as qwerty: 44×5 = 220... adjust to match)
+  Actually qwerty = 5 rows × 44dp = 220dp
+  Let's use: tabs 36 + emoji 3×48 + nav 44 = 224dp ≈ close enough, cachedHeight handles it
+
+  Swipe left/right to change page (handled in MyKeyboardView gesture).
+  Codes: -51..-60 = category tabs | -70 = emoji slot | bottom nav simplified
 -->
 <Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
     android:keyWidth="10%p"
-    android:keyHeight="48dp"
+    android:keyHeight="46dp"
     android:horizontalGap="0dp"
     android:verticalGap="0dp">
 
-    <!-- Category tabs row: 8 tabs × 12.5% = 100% -->
-    <Row android:keyHeight="38dp">
-        <Key android:codes="-51" android:keyLabel="😀" android:keyWidth="12%p"  android:keyEdgeFlags="left"/>
-        <Key android:codes="-52" android:keyLabel="👋" android:keyWidth="12%p"/>
-        <Key android:codes="-53" android:keyLabel="❤"  android:keyWidth="12%p"/>
-        <Key android:codes="-54" android:keyLabel="🐾" android:keyWidth="12%p"/>
-        <Key android:codes="-55" android:keyLabel="🍔" android:keyWidth="13%p"/>
-        <Key android:codes="-56" android:keyLabel="🚗" android:keyWidth="13%p"/>
-        <Key android:codes="-57" android:keyLabel="⚽" android:keyWidth="13%p"/>
-        <Key android:codes="-58" android:keyLabel="💡" android:keyWidth="13%p" android:keyEdgeFlags="right"/>
+    <!-- Row 1: 10 category tabs × 10% = 100% (thinner row) -->
+    <Row android:keyHeight="34dp">
+        <Key android:codes="-51" android:keyLabel="😀" android:keyEdgeFlags="left"/>
+        <Key android:codes="-52" android:keyLabel="👋"/>
+        <Key android:codes="-53" android:keyLabel="❤"/>
+        <Key android:codes="-54" android:keyLabel="🐾"/>
+        <Key android:codes="-55" android:keyLabel="🍔"/>
+        <Key android:codes="-56" android:keyLabel="🚗"/>
+        <Key android:codes="-57" android:keyLabel="⚽"/>
+        <Key android:codes="-58" android:keyLabel="💡"/>
+        <Key android:codes="-59" android:keyLabel="🔣"/>
+        <Key android:codes="-60" android:keyLabel="🏳" android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- Emoji rows: 10 per row × 10% = 100%
-         Labels and codes set dynamically by IME. Placeholders here. -->
+    <!-- Rows 2-4: emoji slots, 10 per row -->
     <Row>
-        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="left"/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="right"/>
+        <Key android:codes="-70" android:keyLabel=" " android:keyEdgeFlags="left"/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" " android:keyEdgeFlags="right"/>
     </Row>
     <Row>
-        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="left"/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="right"/>
+        <Key android:codes="-70" android:keyLabel=" " android:keyEdgeFlags="left"/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" " android:keyEdgeFlags="right"/>
     </Row>
     <Row>
-        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="left"/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" "/>
-        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="right"/>
+        <Key android:codes="-70" android:keyLabel=" " android:keyEdgeFlags="left"/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" "/>
+        <Key android:codes="-70" android:keyLabel=" " android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- Bottom row: same as other keyboards -->
-    <Row android:rowEdgeFlags="bottom">
-        <Key android:codes="-2"  android:keyLabel="ABC"    android:keyWidth="18%p" android:keyEdgeFlags="left"/>
-        <Key android:codes="-59" android:keyLabel="◀"      android:keyWidth="12%p"/>
-        <Key android:codes="32"  android:keyLabel="space"  android:keyWidth="38%p"/>
-        <Key android:codes="-61" android:keyLabel="▶"      android:keyWidth="12%p"/>
-        <Key android:codes="-5"  android:keyLabel="⌫"      android:keyWidth="20%p" android:keyEdgeFlags="right" android:isRepeatable="true"/>
+    <!-- Row 5: nav — ABC | space | ⌫  (no arrows — use swipe to page) -->
+    <Row android:rowEdgeFlags="bottom" android:keyHeight="44dp">
+        <Key android:codes="-2"  android:keyLabel="ABC"   android:keyWidth="20%p" android:keyEdgeFlags="left"/>
+        <Key android:codes="32"  android:keyLabel="space" android:keyWidth="60%p"/>
+        <Key android:codes="-5"  android:keyLabel="⌫"     android:keyWidth="20%p" android:keyEdgeFlags="right" android:isRepeatable="true"/>
     </Row>
 
 </Keyboard>
