@@ -11,7 +11,9 @@
         android:layout_height="46dp"
         android:orientation="horizontal"
         android:background="@drawable/candidate_bar_bg"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
 
         <!-- Language pills -->
         <LinearLayout
@@ -20,14 +22,18 @@
             android:layout_height="match_parent"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="6dp"
+            android:paddingStart="4dp"
             android:paddingEnd="2dp"/>
 
-        <View android:layout_width="0.5dp" android:layout_height="20dp"
-            android:background="#33FFFFFF"
-            android:layout_marginStart="4dp" android:layout_marginEnd="4dp"/>
+        <!-- Divider -->
+        <View
+            android:layout_width="0.5dp"
+            android:layout_height="18dp"
+            android:background="#28FFFFFF"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"/>
 
-        <!-- Word suggestion chips (scrollable) -->
+        <!-- Word suggestions (scrollable, fills remaining space) -->
         <HorizontalScrollView
             android:id="@+id/candidates_view"
             android:layout_width="0dp"
@@ -46,25 +52,32 @@
                 android:paddingEnd="4dp"/>
         </HorizontalScrollView>
 
-        <View android:layout_width="0.5dp" android:layout_height="20dp"
-            android:background="#33FFFFFF"
-            android:layout_marginStart="2dp" android:layout_marginEnd="2dp"/>
+        <!-- Divider -->
+        <View
+            android:layout_width="0.5dp"
+            android:layout_height="18dp"
+            android:background="#28FFFFFF"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"/>
 
-        <!-- Emoji panel — ☺ symbol (U+263A) -->
+        <!-- Emoji toggle  ☺ U+263A -->
         <TextView
             android:id="@+id/btn_emoji"
-            android:layout_width="42dp"
+            android:layout_width="40dp"
             android:layout_height="46dp"
             android:text="&#9786;"
-            android:textSize="18sp"
-            android:textColor="#99FFFFFF"
+            android:textSize="17sp"
+            android:textColor="#AAFFFFFF"
             android:gravity="center"
             android:background="@android:color/transparent"/>
 
-        <View android:layout_width="0.5dp" android:layout_height="20dp"
-            android:background="#33FFFFFF"/>
+        <!-- Divider -->
+        <View
+            android:layout_width="0.5dp"
+            android:layout_height="18dp"
+            android:background="#28FFFFFF"/>
 
-        <!-- Keyboard mode (Wij / Pho / ABC) -->
+        <!-- Keyboard mode  -->
         <TextView
             android:id="@+id/btn_kb_mode"
             android:layout_width="40dp"
@@ -72,28 +85,31 @@
             android:text="Wij"
             android:textSize="11sp"
             android:textStyle="bold"
-            android:textColor="#99FFFFFF"
+            android:textColor="#AAFFFFFF"
             android:gravity="center"
             android:fontFamily="sans-serif-medium"
             android:background="@android:color/transparent"/>
 
-        <View android:layout_width="0.5dp" android:layout_height="20dp"
-            android:background="#33FFFFFF"/>
+        <!-- Divider -->
+        <View
+            android:layout_width="0.5dp"
+            android:layout_height="18dp"
+            android:background="#28FFFFFF"/>
 
-        <!-- Settings — ⚙ gear (U+2699) -->
+        <!-- Settings  ⚙ U+2699 -->
         <TextView
             android:id="@+id/btn_settings"
-            android:layout_width="42dp"
+            android:layout_width="40dp"
             android:layout_height="46dp"
             android:text="&#9881;"
-            android:textSize="18sp"
-            android:textColor="#99FFFFFF"
+            android:textSize="17sp"
+            android:textColor="#AAFFFFFF"
             android:gravity="center"
             android:background="@android:color/transparent"/>
 
     </LinearLayout>
 
-    <!-- Keyboard view — no border, spacing done in MyKeyboardView.kt -->
+    <!-- The keyboard — no outer border, spacing all in MyKeyboardView.kt -->
     <com.gihansgamage.aksharakb.MyKeyboardView
         android:id="@+id/keyboard_view"
         android:layout_width="match_parent"

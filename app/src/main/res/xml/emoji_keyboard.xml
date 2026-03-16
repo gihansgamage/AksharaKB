@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Emoji keyboard layout.
+  8 category tab keys across the top row.
+  Then 3 rows × 10 emoji keys = 30 visible emoji slots.
+  The IME dynamically updates key labels and codes when category changes.
+  Code -50 = emoji category tab press.
+  Code -60 = emoji key press (handled via keyLabel text).
+  Gap = 0dp, all spacing in MyKeyboardView.
+-->
+<Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
+    android:keyWidth="10%p"
+    android:keyHeight="48dp"
+    android:horizontalGap="0dp"
+    android:verticalGap="0dp">
+
+    <!-- Category tabs row: 8 tabs × 12.5% = 100% -->
+    <Row android:keyHeight="38dp">
+        <Key android:codes="-51" android:keyLabel="😀" android:keyWidth="12%p"  android:keyEdgeFlags="left"/>
+        <Key android:codes="-52" android:keyLabel="👋" android:keyWidth="12%p"/>
+        <Key android:codes="-53" android:keyLabel="❤"  android:keyWidth="12%p"/>
+        <Key android:codes="-54" android:keyLabel="🐾" android:keyWidth="12%p"/>
+        <Key android:codes="-55" android:keyLabel="🍔" android:keyWidth="13%p"/>
+        <Key android:codes="-56" android:keyLabel="🚗" android:keyWidth="13%p"/>
+        <Key android:codes="-57" android:keyLabel="⚽" android:keyWidth="13%p"/>
+        <Key android:codes="-58" android:keyLabel="💡" android:keyWidth="13%p" android:keyEdgeFlags="right"/>
+    </Row>
+
+    <!-- Emoji rows: 10 per row × 10% = 100%
+         Labels and codes set dynamically by IME. Placeholders here. -->
+    <Row>
+        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="left"/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="right"/>
+    </Row>
+    <Row>
+        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="left"/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="right"/>
+    </Row>
+    <Row>
+        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="left"/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" "/>
+        <Key android:codes="-60" android:keyLabel=" " android:keyEdgeFlags="right"/>
+    </Row>
+
+    <!-- Bottom row: same as other keyboards -->
+    <Row android:rowEdgeFlags="bottom">
+        <Key android:codes="-2"  android:keyLabel="ABC"    android:keyWidth="18%p" android:keyEdgeFlags="left"/>
+        <Key android:codes="-59" android:keyLabel="◀"      android:keyWidth="12%p"/>
+        <Key android:codes="32"  android:keyLabel="space"  android:keyWidth="38%p"/>
+        <Key android:codes="-61" android:keyLabel="▶"      android:keyWidth="12%p"/>
+        <Key android:codes="-5"  android:keyLabel="⌫"      android:keyWidth="20%p" android:keyEdgeFlags="right" android:isRepeatable="true"/>
+    </Row>
+
+</Keyboard>
