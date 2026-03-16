@@ -13,180 +13,216 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     private var keyboardBg: Bitmap? = null
     private var prefs = KeyboardPreferences(context)
 
-    private val bgPaint        = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val keyFillPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val keyStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val keyGlowPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val hlPaint        = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val shadowPaint    = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val textPaint      = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val bgPaint     = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val keyFill     = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val keyStroke   = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val keyGlow     = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val topShine    = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val keyText     = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        typeface  = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        typeface  = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
-    private val borderPaint    = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val rrect = RectF()
+    private val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val scanPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeWidth = 0.4f
+    }
+    private val rrect  = RectF()
+    private val rrect2 = RectF()
 
-    fun setKeyboardImage(bitmap: Bitmap?) { keyboardBg = bitmap; invalidate() }
-    fun refreshPrefs()                    { prefs = KeyboardPreferences(context); invalidate() }
+    fun setKeyboardImage(b: Bitmap?) { keyboardBg = b; invalidate() }
+    fun refreshPrefs() { prefs = KeyboardPreferences(context); invalidate() }
 
-    private fun dp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, resources.displayMetrics)
+    private fun dp(v: Float) = TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_DIP, v, resources.displayMetrics)
 
-    // ── Theme data class ────────────────────────────────────────
-    private data class T(
+    private data class Theme(
         val bgA: Int, val bgB: Int,
-        val keyFill: Int, val specFill: Int,
-        val stroke: Int, val glow: Int, val highlight: Int, val shadow: Int,
+        val fill: Int, val specFill: Int, val accentFill: Int,
+        val stroke: Int, val glow: Int, val shine: Int,
+        val shadow: Int, val scan: Int,
         val text: Int, val specText: Int
     )
 
-    private fun theme(): T = when (prefs.theme) {
-        KeyboardPreferences.THEME_DARK -> T(
-            bgA       = 0xFF0D0D1A.toInt(),
-            bgB       = 0xFF1A1030.toInt(),
-            keyFill   = 0x1EFFFFFF,
-            specFill  = 0x337C3AED,
-            stroke    = 0x55A78BFA,
-            glow      = 0x337C3AED,
-            highlight = 0x44FFFFFF,
-            shadow    = 0x33000000,
-            text      = 0xFFEDE9FE.toInt(),
-            specText  = 0xFFC4B5FD.toInt()
+    private fun theme(): Theme = when (prefs.theme) {
+        KeyboardPreferences.THEME_DARK -> Theme(
+            bgA        = 0xFF0A0A14.toInt(),
+            bgB        = 0xFF141428.toInt(),
+            fill       = 0x20FFFFFF,
+            specFill   = 0x2A6D28E0,
+            accentFill = 0x3A7C3AED,
+            stroke     = 0x388B7CF8,
+            glow       = 0x166D28E0,
+            shine      = 0x16FFFFFF,
+            shadow     = 0x22000000,
+            scan       = 0x05FFFFFF,
+            text       = 0xFFEEE8FF.toInt(),
+            specText   = 0xFFB39DDB.toInt()
         )
-        KeyboardPreferences.THEME_OCEAN -> T(
-            bgA       = 0xFF010E1C.toInt(),
-            bgB       = 0xFF04274A.toInt(),
-            keyFill   = 0x221B3A5F,
-            specFill  = 0x330E4D7A,
-            stroke    = 0x660EA5E9,
-            glow      = 0x330EA5E9,
-            highlight = 0x4488CCEE,
-            shadow    = 0x33000022,
-            text      = 0xFFBAE6FF.toInt(),
-            specText  = 0xFF7DD3FC.toInt()
+        KeyboardPreferences.THEME_OCEAN -> Theme(
+            bgA        = 0xFF010B18.toInt(),
+            bgB        = 0xFF031E3A.toInt(),
+            fill       = 0x1A1E5080,
+            specFill   = 0x2A0D4F7A,
+            accentFill = 0x330E6EA5,
+            stroke     = 0x4038BDF8,
+            glow       = 0x160E6EA5,
+            shine      = 0x1488DDFF,
+            shadow     = 0x22000022,
+            scan       = 0x05AADDFF,
+            text       = 0xFFCCEEFF.toInt(),
+            specText   = 0xFF7DD3FC.toInt()
         )
-        KeyboardPreferences.THEME_SUNSET -> T(
-            bgA       = 0xFF150010.toInt(),
-            bgB       = 0xFF3A0840.toInt(),
-            keyFill   = 0x222D0A35,
-            specFill  = 0x33780A8C,
-            stroke    = 0x77D946EF,
-            glow      = 0x33D946EF,
-            highlight = 0x44EE88FF,
-            shadow    = 0x33100011,
-            text      = 0xFFF5D0FE.toInt(),
-            specText  = 0xFFE879F9.toInt()
+        KeyboardPreferences.THEME_SUNSET -> Theme(
+            bgA        = 0xFF0D0010.toInt(),
+            bgB        = 0xFF2A0630.toInt(),
+            fill       = 0x1E3D0A46,
+            specFill   = 0x2A6A0F80,
+            accentFill = 0x33A020C0,
+            stroke     = 0x44D946EF,
+            glow       = 0x16C026E0,
+            shine      = 0x14FF88FF,
+            shadow     = 0x22100010,
+            scan       = 0x05FF88FF,
+            text       = 0xFFF0D0FF.toInt(),
+            specText   = 0xFFE879F9.toInt()
         )
-        else -> T(  // Default light-futuristic
-            bgA       = 0xFFDDE1F5.toInt(),
-            bgB       = 0xFFBBC3EA.toInt(),
-            keyFill   = 0xDDFFFFFF.toInt(),
-            specFill  = 0x227C3AED,
-            stroke    = 0x887C3AED.toInt(),
-            glow      = 0x227C3AED,
-            highlight = 0xCCFFFFFF.toInt(),
-            shadow    = 0x22000066,
-            text      = 0xFF1E0A3C.toInt(),
-            specText  = 0xFF5B21B6.toInt()
+        else -> Theme(
+            bgA        = 0xFFCDD5F4.toInt(),
+            bgB        = 0xFFB0BCE8.toInt(),
+            fill       = 0xCCFFFFFF.toInt(),
+            specFill   = 0x1E7C3AED,
+            accentFill = 0x2E7C3AED,
+            stroke     = 0x667C3AED,
+            glow       = 0x107C3AED,
+            shine      = 0xAAFFFFFF.toInt(),
+            shadow     = 0x18000055,
+            scan       = 0x056666AA,
+            text       = 0xFF1E0A40.toInt(),
+            specText   = 0xFF5B21B6.toInt()
         )
     }
 
-    private fun isSpecial(code: Int) = code == Keyboard.KEYCODE_DELETE ||
-            code == Keyboard.KEYCODE_SHIFT || code == Keyboard.KEYCODE_DONE ||
-            code == Keyboard.KEYCODE_MODE_CHANGE || code == 32 || code == -10 || code == -20
+    private fun isSpecial(code: Int) =
+        code == Keyboard.KEYCODE_DELETE ||
+                code == Keyboard.KEYCODE_SHIFT  ||
+                code == Keyboard.KEYCODE_DONE   ||
+                code == Keyboard.KEYCODE_MODE_CHANGE ||
+                code == -10 || code == -20 || code == -30
 
-    // ── onDraw ───────────────────────────────────────────────────
+    private fun isAccent(code: Int) =
+        code == Keyboard.KEYCODE_DONE || code == -10 || code == -30
+
     override fun onDraw(canvas: Canvas) {
         val t = theme()
-        val w = width.toFloat()
-        val h = height.toFloat()
-        val r = dp(4f)          // key corner radius
-        val gap = dp(2.5f)      // half-gap around each key
+        val W = width.toFloat()
+        val H = height.toFloat()
 
-        // 1 ── Background gradient
+        // 1 ── Background
         if (keyboardBg != null && prefs.theme == KeyboardPreferences.THEME_CUSTOM) {
             canvas.drawBitmap(keyboardBg!!, null, Rect(0, 0, width, height), null)
-            canvas.drawColor(0xCC000000.toInt())
+            canvas.drawColor(0xBB000000.toInt())
         } else {
-            bgPaint.shader = LinearGradient(0f, 0f, 0f, h, t.bgA, t.bgB, Shader.TileMode.CLAMP)
-            canvas.drawRect(0f, 0f, w, h, bgPaint)
+            bgPaint.shader = LinearGradient(0f, 0f, 0f, H, t.bgA, t.bgB, Shader.TileMode.CLAMP)
+            canvas.drawRect(0f, 0f, W, H, bgPaint)
         }
 
-        // subtle horizontal scan-line pattern (every 4dp)
-        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0x05FFFFFF
-            style = Paint.Style.STROKE
-            strokeWidth = 1f
-        }
-        var ly = 0f
-        val step = dp(4f)
-        while (ly < h) { canvas.drawLine(0f, ly, w, ly, linePaint); ly += step }
+        // Subtle scan lines
+        scanPaint.color = t.scan
+        var sy = 0f; val ss = dp(3f)
+        while (sy < H) { canvas.drawLine(0f, sy, W, sy, scanPaint); sy += ss }
 
         // 2 ── Keys
-        val kb = keyboard ?: run { super.onDraw(canvas); return }
-        val keys = kb.keys ?: run { super.onDraw(canvas); return }
-        val baseSp = (prefs.keyHeight.coerceIn(44, 72) * 0.29f)
-        val basePx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, baseSp, resources.displayMetrics)
+        val kb   = keyboard ?: run { super.onDraw(canvas); return }
+        val keys = kb.keys  ?: run { super.onDraw(canvas); return }
+
+        // Tight gap for narrow keys — 1.5dp each side
+        val gap = dp(1.5f)
+        // Large corner radius for liquid pill look
+        val r   = dp(11f)
+        // Dynamic text size based on key height
+        val kh0 = if (keys.isNotEmpty()) keys[0].height.toFloat() else dp(46f)
+        val basePx = kh0 * 0.30f
 
         for (key in keys) {
             val kx   = key.x.toFloat()
             val ky   = key.y.toFloat()
             val kw   = key.width.toFloat()
             val kh   = key.height.toFloat()
-            val spec = isSpecial(key.codes.firstOrNull() ?: 0)
+            val spec   = isSpecial(key.codes.firstOrNull() ?: 0)
+            val accent = isAccent(key.codes.firstOrNull() ?: 0)
+            val space  = (key.codes.firstOrNull() ?: 0) == 32
 
-            val l = kx + gap
+            val l   = kx + gap
             val top = ky + gap
-            val ri = kx + kw - gap
+            val ri  = kx + kw - gap
             val bot = ky + kh - gap
 
-            // 2a shadow
+            // Shadow (very subtle)
             shadowPaint.color = t.shadow
-            rrect.set(l + dp(1f), top + dp(2f), ri + dp(1f), bot + dp(2f))
+            rrect.set(l + dp(0.5f), top + dp(1.5f), ri + dp(0.5f), bot + dp(1.5f))
             canvas.drawRoundRect(rrect, r, r, shadowPaint)
 
-            // 2b outer glow (wider stroke, transparent)
-            rrect.set(l - dp(1f), top - dp(1f), ri + dp(1f), bot + dp(1f))
-            keyGlowPaint.color = t.glow
-            keyGlowPaint.strokeWidth = dp(3f)
-            canvas.drawRoundRect(rrect, r + dp(1f), r + dp(1f), keyGlowPaint)
+            // Outer glow halo
+            rrect2.set(l - dp(0.8f), top - dp(0.4f), ri + dp(0.8f), bot + dp(0.4f))
+            keyGlow.color = t.glow
+            keyGlow.strokeWidth = dp(3f)
+            canvas.drawRoundRect(rrect2, r + dp(1f), r + dp(1f), keyGlow)
 
-            // 2c fill
+            // Key fill
             rrect.set(l, top, ri, bot)
-            keyFillPaint.color = if (spec) t.specFill else t.keyFill
-            canvas.drawRoundRect(rrect, r, r, keyFillPaint)
+            keyFill.color = when {
+                accent -> t.accentFill
+                spec   -> t.specFill
+                space  -> (t.fill and 0x00FFFFFF) or 0x24000000
+                else   -> t.fill
+            }
+            canvas.drawRoundRect(rrect, r, r, keyFill)
 
-            // 2d stroke
-            keyStrokePaint.color = t.stroke
-            keyStrokePaint.strokeWidth = dp(0.7f)
-            canvas.drawRoundRect(rrect, r, r, keyStrokePaint)
+            // Border stroke
+            keyStroke.color = t.stroke
+            keyStroke.strokeWidth = dp(0.5f)
+            canvas.drawRoundRect(rrect, r, r, keyStroke)
 
-            // 2e top highlight (glass edge)
-            hlPaint.color = t.highlight
-            hlPaint.strokeWidth = dp(1f)
-            canvas.drawLine(l + r, top + dp(1.5f), ri - r, top + dp(1.5f), hlPaint)
+            // Top shine — glass refraction
+            val shH = (bot - top) * 0.32f
+            rrect2.set(l + dp(1.5f), top + dp(1f), ri - dp(1.5f), top + shH)
+            topShine.shader = LinearGradient(
+                0f, top + dp(1f), 0f, top + shH,
+                t.shine, 0x00FFFFFF, Shader.TileMode.CLAMP)
+            canvas.drawRoundRect(rrect2, r * 0.55f, r * 0.55f, topShine)
 
-            // 2f label
+            // Label
             val label = when {
                 key.label != null -> key.label.toString()
                 key.codes.isNotEmpty() && key.codes[0] > 31 -> key.codes[0].toChar().toString()
                 else -> ""
             }
             if (label.isNotEmpty()) {
-                textPaint.color = if (spec) t.specText else t.text
-                textPaint.textSize = if (label.length > 4) basePx * 0.72f else basePx
+                keyText.color = if (spec || accent) t.specText else t.text
+                // Scale text to fit narrow keys
+                keyText.textSize = when {
+                    label.length > 5 -> basePx * 0.60f
+                    label.length > 3 -> basePx * 0.75f
+                    label.length > 1 -> basePx * 0.85f
+                    else             -> basePx
+                }
+                // Clamp: don't exceed key width - padding
+                val maxW = (ri - l) * 0.82f
+                if (keyText.measureText(label) > maxW) {
+                    keyText.textSize *= (maxW / keyText.measureText(label))
+                }
                 val cx = kx + kw / 2f
-                val cy = ky + kh / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
-                canvas.drawText(label, cx, cy, textPaint)
+                val cy = ky + kh / 2f - (keyText.descent() + keyText.ascent()) / 2f
+                canvas.drawText(label, cx, cy, keyText)
             }
         }
 
         // 3 ── Border
         if (prefs.showBorder) {
-            borderPaint.color = t.stroke
-            borderPaint.strokeWidth = dp(0.8f)
-            canvas.drawRect(0f, 0f, w, h, borderPaint)
+            keyStroke.color = t.stroke
+            keyStroke.strokeWidth = dp(0.8f)
+            canvas.drawRect(0f, 0f, W, H, keyStroke)
         }
-
-        // Do NOT call super.onDraw() — we've drawn everything ourselves
+        // Never call super.onDraw()
     }
 }
