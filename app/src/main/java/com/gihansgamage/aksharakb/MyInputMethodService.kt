@@ -32,31 +32,80 @@ class MyInputMethodService : InputMethodService(),
     private var clipboard: KeyboardClipboard? = null
     private var prefs: KeyboardPreferences? = null
 
-    // Panel state
-    private var isCaps        = false
+    // Caps states: NONE → SHIFT (one letter) → CAPS_LOCK (stays on)
+    private enum class CapsState { NONE, SHIFT, CAPS_LOCK }
+    private var capsState     = CapsState.NONE
     private var isSymbols     = false
     private var showClipboard = false
     private var showEmoji     = false
+    private var emojiCategory = 0
     private var currentInput  = StringBuilder()
 
-    // Full emoji list
-    private val allEmojis = listOf(
-        "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚",
-        "😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥",
-        "😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐",
-        "😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞",
-        "😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖",
-        "👋","🤚","🖐","✋","🖖","👌","🤌","✌️","🤞","🤟","🤘","🤙","👍","👎","✊","👊","🤛","🤜","👏","🙌",
-        "👐","🤲","🤝","🙏","💪","❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗",
-        "💖","💘","💝","🔥","⭐","🌟","💫","✨","🎉","🎊","🎈","🎁","🏆","🥇","🥈","🥉","🎯","🎮","🎲","🧩",
-        "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🙈","🙉","🙊","🐔","🐧",
-        "🍎","🍊","🍋","🍇","🍓","🍒","🍑","🥭","🍍","🥥","🍅","🍆","🥑","🥦","🥕","🧄","🍔","🍟","🍕","🌮",
-        "🍜","🍣","🍱","🧁","🍰","🎂","🍭","🍬","🍫","🍿","🍩","🍪","☕","🍵","🥤","🧋","🍺","🥂","🍾","🍷",
-        "🚗","🚕","🚙","🏎","🚓","🚑","🚒","✈️","🚀","🛸","⛵","🚢","🏠","🏡","🏢","🏦","🏥","🏨","🏪","🏫",
-        "⚽","🏀","🏈","⚾","🎾","🏐","🏉","⛳","🏹","🎣","🤿","🎿","🛷","🥌","🎯","🎱","🎮","🕹","🎰","🎲",
-        "💡","🔦","💰","💵","💳","💹","📱","💻","🖥","⌨️","🖱","💾","📷","📸","📹","🎥","📺","📻","📞","☎️",
-        "🌈","☀️","🌤","⛅","☁️","🌧","⛈","🌩","❄️","☃️","⛄","🌪","🌊","💧","🌙","🌛","⭐","🌟","💫","🌍",
-        "🏳️","🏴","🚩","🎌","🏁","🆕","🆒","🆓","🆙","🆗","🆖","🆘","⚠️","🚫","❌","✅","💯","🔴","🟡","🟢"
+    // ── Emoji categories ────────────────────────────────────────
+    private val emojiCategories = listOf(
+        "😀" to listOf(
+            "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗",
+            "😙","😚","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏",
+            "😒","🙄","😬","🤥","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵",
+            "🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨",
+            "😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿",
+            "💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"
+        ),
+        "👋" to listOf(
+            "👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇",
+            "☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾",
+            "🦵","🦶","👂","🦻","👃","🧠","🦷","🦴","👀","👁","👅","👄","💋","🫀","🫁","🧬","🦱","🦰",
+            "🦳","🦲","👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","🧓","👴","👵","🙍","🙎","🙅","🙆",
+            "💁","🙋","🧏","🙇","🤦","🤷","👮","🕵","💂","🥷","👷","🫅","🤴","👸","👳","👲","🧕","🤵",
+            "👰","🤰","🤱","👼","🎅","🤶","🧑‍🎄","🦸","🦹","🧙","🧝","🧛","🧟","🧌","🧞","🧜","🧚"
+        ),
+        "❤️" to listOf(
+            "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝",
+            "💟","☮️","✝️","☪️","🕉","✡️","🔯","🕎","☯️","☦️","🛐","⛎","♈","♉","♊","♋","♌","♍",
+            "♎","♏","♐","♑","♒","♓","⛎","🆔","⚛️","🉑","☢️","☣️","📴","📳","🈶","🈚","🈸","🈺",
+            "🈷️","✴️","🆚","💮","🉐","㊙️","㊗️","🈴","🈵","🈹","🈲","🅰️","🅱️","🆎","🆑","🅾️","🆘",
+            "⛔","📛","🚫","💯","💢","♨️","🚷","🚯","🚳","🚱","🔞","📵","🚭","❗","❕","❓","❔","‼️",
+            "⁉️","🔅","🔆","〽️","⚠️","🔱","⚜️","🔰","♻️","✅","🈯","💹","❎","🌐","🌀","➿","🌁"
+        ),
+        "🐶" to listOf(
+            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉",
+            "🙊","🐒","🐔","🐧","🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🌱","🌲","🌳",
+            "🌴","🌵","🎋","🌾","🍀","🌿","☘️","🍃","🍂","🍁","🍄","🐚","🌾","💐","🌷","🌹","🥀","🌺",
+            "🌸","🌼","🌻","🌞","🌝","🌛","🌜","🌚","🌕","🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌙","🌟",
+            "⭐","🌠","⛅","⛈","🌤","🌥","🌦","🌧","🌨","🌩","🌪","🌫","🌬","🌀","🌈","🌂","☂️","☔",
+            "⛱","⚡","❄️","☃️","⛄","🌊","💧","💦","🔥","🌋","🌎","🌍","🌏","🗺","🧭","🏔","⛰"
+        ),
+        "🍎" to listOf(
+            "🍎","🍊","🍋","🍇","🍓","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒",
+            "🌶","🥕","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🥞","🧇","🥓","🥩",
+            "🍗","🍖","🌭","🍔","🍟","🍕","🌮","🌯","🥙","🧆","🥚","🍝","🍜","🍲","🍛","🍣","🍱","🥟",
+            "🍤","🍙","🍚","🍘","🍥","🥮","🍢","🧁","🍰","🎂","🍮","🍭","🍬","🍫","🍿","🍩","🍪","🌰",
+            "🥜","🍯","🥛","🍼","☕","🍵","🧃","🥤","🧋","🍶","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🧉",
+            "🍾","🥄","🍴","🍽","🥢","🧂","🫙","🧊","🥡","🥠","🍱","🧁","🍮","🥧","🧇","🥞","🫕"
+        ),
+        "🚗" to listOf(
+            "🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍","🛵","🚲","🛴",
+            "🛹","🛼","🚏","⛽","🛣","🛤","🗺","🏔","⛰","🌋","🗻","🏕","🏖","🏜","🏝","🏞","🏟","🏛",
+            "🏗","🏘","🏚","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰",
+            "💒","🗼","🗽","⛪","🕌","🛕","🕍","⛩","🕋","⛲","⛺","🌁","🌃","🏙","🌄","🌅","🌆","🌇",
+            "🌉","♨️","🌌","🌠","🎇","🎆","🗾","🎑","⛱","🗿","🚀","✈️","🛸","🚁","🛶","⛵","🚤","🛥",
+            "🛳","⛴","🚢","🛩","🛫","🛬","💺","🚂","🚃","🚄","🚅","🚆","🚇","🚈","🚉","🚊","🚝","🚞"
+        ),
+        "⚽" to listOf(
+            "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🥍","🏑","🏏","🪃",
+            "⛳","🏹","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🪁","🎱","🔮","🎮","🕹","🎰","🎲","🧩","🧸",
+            "♟","🪆","🪅","🎭","🎨","🖼","🎪","🤹","🎠","🎡","🎢","🎪","🎤","🎧","🎼","🎵","🎶","🎷",
+            "🪗","🎸","🎹","🎺","🎻","🪘","🥁","🪩","🎬","🎥","📽","🎞","📞","☎️","📟","📠","📺","📷",
+            "📸","📹","🎙","🎚","🎛","🧭","⏱","⏲","⏰","🕰","⌛","⏳","📡","🔋","🔌","💡","🔦","🕯",
+            "🪔","🧯","🛢","💰","💴","💵","💶","💷","💸","💳","🪙","💹","💱","💲","✉️","📧","📨","📩"
+        ),
+        "🎉" to listOf(
+            "🎉","🎊","🎈","🎁","🎀","🎗","🎟","🎫","🏆","🥇","🥈","🥉","🎖","🏅","🎪","🤹","🎭","🎨",
+            "🖼","🎠","🎡","🎢","🎪","🎤","🎧","🎼","🎵","🎶","🎷","🎸","🎹","🎺","🎻","🥁","🪘","🎬",
+            "🎥","📽","🎞","🎮","🕹","🎯","🎲","🧩","🧸","♟","🪆","🪅","🎴","🃏","🀄","🎭","🎪","🎠",
+            "🌟","⭐","🌠","🎆","🎇","✨","🎍","🎋","🎃","🎑","🎄","🎆","🎇","🧧","🎐","🎏","🎑","🎀",
+            "🎁","🎗","🎟","🎫","🎖","🏆","🥇","🎈","🎉","🎊","🎋","🎌","🎍","🎎","🎏","🎐","🎑","🧧"
+        )
     )
 
     override fun onCreate() {
@@ -98,7 +147,6 @@ class MyInputMethodService : InputMethodService(),
         candidatesContainer = inputView.findViewById(R.id.candidates_container)
         candidatesScroll    = inputView.findViewById(R.id.candidates_view)
 
-        // Settings button in candidate bar
         inputView.findViewById<ImageButton>(R.id.btn_settings)?.setOnClickListener {
             vibrateKey()
             packageManager.getLaunchIntentForPackage(packageName)?.apply {
@@ -118,12 +166,9 @@ class MyInputMethodService : InputMethodService(),
         if (p.theme == KeyboardPreferences.THEME_CUSTOM && p.bgImageUri.isNotEmpty()) {
             try {
                 val s = contentResolver.openInputStream(Uri.parse(p.bgImageUri))
-                kv.setKeyboardImage(BitmapFactory.decodeStream(s))
-                s?.close()
+                kv.setKeyboardImage(BitmapFactory.decodeStream(s)); s?.close()
             } catch (_: Exception) { kv.setKeyboardImage(null) }
-        } else {
-            kv.setKeyboardImage(null)
-        }
+        } else { kv.setKeyboardImage(null) }
         kv.isPreviewEnabled = p.showPopupKeys
         kv.refreshPrefs()
         setKeyboardLayout()
@@ -142,7 +187,8 @@ class MyInputMethodService : InputMethodService(),
         }
         keyboard = Keyboard(this, xmlId)
         keyboardView?.keyboard = keyboard
-        keyboard?.isShifted = isCaps
+        // Apply current caps state to keyboard
+        keyboard?.isShifted = (capsState != CapsState.NONE)
         keyboardView?.invalidateAllKeys()
     }
 
@@ -152,9 +198,8 @@ class MyInputMethodService : InputMethodService(),
         val ic = currentInputConnection ?: return
         vibrateKey()
 
-        // Dismiss panels on any other key
         if (showClipboard && primaryCode != -20) { showClipboard = false; updateCandidates(currentInput.toString()) }
-        if (showEmoji     && primaryCode != -40) { showEmoji     = false; updateCandidates(currentInput.toString()) }
+        if (showEmoji     && primaryCode != -40) { showEmoji = false; updateCandidates(currentInput.toString()) }
 
         when (primaryCode) {
 
@@ -165,8 +210,13 @@ class MyInputMethodService : InputMethodService(),
             }
 
             Keyboard.KEYCODE_SHIFT -> {
-                isCaps = !isCaps
-                keyboard?.isShifted = isCaps
+                // Single tap → SHIFT, double tap → CAPS_LOCK, tap again → NONE
+                capsState = when (capsState) {
+                    CapsState.NONE      -> CapsState.SHIFT
+                    CapsState.SHIFT     -> CapsState.CAPS_LOCK
+                    CapsState.CAPS_LOCK -> CapsState.NONE
+                }
+                keyboard?.isShifted = (capsState != CapsState.NONE)
                 keyboardView?.invalidateAllKeys()
             }
 
@@ -190,10 +240,9 @@ class MyInputMethodService : InputMethodService(),
             }
 
             -40 -> {
-                // Emoji panel toggle
                 showClipboard = false
                 showEmoji     = !showEmoji
-                if (showEmoji) showEmojiPanel() else updateCandidates(currentInput.toString())
+                if (showEmoji) showEmojiPanel(emojiCategory) else updateCandidates(currentInput.toString())
             }
 
             32 -> { ic.commitText(" ", 1); learnAndReset() }
@@ -201,11 +250,18 @@ class MyInputMethodService : InputMethodService(),
             else -> {
                 if (primaryCode > 0) {
                     var ch = primaryCode.toChar()
-                    if (isCaps && ch.isLetter()) ch = ch.uppercaseChar()
+                    if (capsState != CapsState.NONE && ch.isLetter()) ch = ch.uppercaseChar()
                     ic.commitText(ch.toString(), 1)
                     currentInput.append(ch)
                     updateCandidates(currentInput.toString())
-                    if (isCaps) { isCaps = false; keyboard?.isShifted = false; keyboardView?.invalidateAllKeys() }
+
+                    // After typing one letter in SHIFT mode, go back to NONE
+                    if (capsState == CapsState.SHIFT) {
+                        capsState = CapsState.NONE
+                        keyboard?.isShifted = false
+                        keyboardView?.invalidateAllKeys()
+                    }
+                    // CAPS_LOCK stays active
                 }
             }
         }
@@ -217,13 +273,11 @@ class MyInputMethodService : InputMethodService(),
         val cur  = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
         val next = enabled[(enabled.indexOf(cur) + 1) % enabled.size]
         prefs?.currentLanguage = next
-        isSymbols = false; isCaps = false
-        currentInput.clear()
-        setKeyboardLayout()
-        updateCandidates("")
+        isSymbols = false; capsState = CapsState.NONE
+        currentInput.clear(); setKeyboardLayout(); updateCandidates("")
     }
 
-    // ── Candidates / emoji / clipboard bar ───────────────────────
+    // ── Panels ────────────────────────────────────────────────────
 
     private fun updateCandidates(input: String) {
         val c = candidatesContainer ?: return
@@ -236,13 +290,46 @@ class MyInputMethodService : InputMethodService(),
         (words + emojis).take(8).forEach { w -> addChip(c, w) { commitSuggestion(w) } }
     }
 
-    private fun showEmojiPanel() {
+    private fun showEmojiPanel(catIndex: Int) {
         val c = candidatesContainer ?: return
         c.removeAllViews()
-        allEmojis.forEach { emoji ->
+        emojiCategory = catIndex.coerceIn(0, emojiCategories.lastIndex)
+
+        // Category tabs
+        emojiCategories.forEachIndexed { idx, (icon, _) ->
+            val tab = TextView(this).apply {
+                text = icon
+                textSize = 18f
+                setPadding(14, 0, 14, 0)
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).also { it.setMargins(2, 4, 2, 4) }
+                // Highlight active tab
+                if (idx == emojiCategory) {
+                    setBackgroundResource(R.drawable.candidate_bar_bg)
+                }
+                setOnClickListener {
+                    emojiCategory = idx
+                    showEmojiPanel(idx)
+                }
+            }
+            c.addView(tab)
+        }
+
+        // Divider
+        c.addView(View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
+                .also { it.setMargins(6, 8, 6, 8) }
+            setBackgroundColor(0x33A78BFA)
+        })
+
+        // Emojis for this category
+        emojiCategories[emojiCategory].second.forEach { emoji ->
             addChip(c, emoji) {
                 currentInputConnection?.commitText(emoji, 1)
-                // Keep panel open for more emoji selection
+                // Keep panel open
             }
         }
     }
@@ -256,20 +343,18 @@ class MyInputMethodService : InputMethodService(),
             val s = if (item.length > 28) item.take(25) + "…" else item
             addChip(c, s) {
                 currentInputConnection?.commitText(item, 1)
-                showClipboard = false
-                updateCandidates(currentInput.toString())
+                showClipboard = false; updateCandidates(currentInput.toString())
             }
         }
     }
 
     private fun addChip(container: LinearLayout, text: String, onClick: () -> Unit) {
         container.addView(TextView(this).apply {
-            this.text   = text
-            textSize    = 14f
-            setPadding(20, 0, 20, 0)
+            this.text = text; textSize = 14f
+            setPadding(18, 0, 18, 0)
             setTextColor(chipTextColor())
             setBackgroundResource(R.drawable.candidate_bar_bg)
-            gravity     = android.view.Gravity.CENTER_VERTICAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.MATCH_PARENT
@@ -288,47 +373,36 @@ class MyInputMethodService : InputMethodService(),
     private fun commitSuggestion(word: String) {
         val ic = currentInputConnection ?: return
         if (currentInput.isNotEmpty()) ic.deleteSurroundingText(currentInput.length, 0)
-        ic.commitText("$word ", 1)
-        wordPredictor?.learnWord(word)
-        clipboard?.save(word)
-        currentInput.clear()
-        updateCandidates("")
+        ic.commitText("$word ", 1); wordPredictor?.learnWord(word); clipboard?.save(word)
+        currentInput.clear(); updateCandidates("")
     }
 
     private fun learnAndReset() {
-        if (currentInput.isNotEmpty()) {
-            wordPredictor?.learnWord(currentInput.toString())
-            clipboard?.save(currentInput.toString())
-        }
-        currentInput.clear()
-        updateCandidates("")
+        if (currentInput.isNotEmpty()) { wordPredictor?.learnWord(currentInput.toString()); clipboard?.save(currentInput.toString()) }
+        currentInput.clear(); updateCandidates("")
     }
 
     private fun vibrateKey() {
         if (!(prefs?.vibrateOnKey ?: true)) return
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                (getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager)
-                    ?.defaultVibrator
+                (getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
                     ?.vibrate(VibrationEffect.createOneShot(14, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
                 @Suppress("DEPRECATION")
                 val v = getSystemService(VIBRATOR_SERVICE) as? Vibrator
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                     v?.vibrate(VibrationEffect.createOneShot(14, VibrationEffect.DEFAULT_AMPLITUDE))
-                } else {
-                    @Suppress("DEPRECATION")
-                    v?.vibrate(14)
-                }
+                else @Suppress("DEPRECATION") v?.vibrate(14)
             }
         } catch (_: Exception) {}
     }
 
     override fun swipeLeft()  { cycleLang() }
     override fun swipeRight() { cycleLang() }
-    override fun onPress(p: Int)    {}
-    override fun onRelease(p: Int)  {}
+    override fun onPress(p: Int) {}
+    override fun onRelease(p: Int) {}
     override fun onText(t: CharSequence?) { currentInputConnection?.commitText(t, 1) }
     override fun swipeDown() {}
-    override fun swipeUp()   {}
+    override fun swipeUp() {}
 }
