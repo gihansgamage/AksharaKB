@@ -19,6 +19,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.gihansgamage.aksharakb.data.KeyboardPreferences
+import androidx.core.content.ContextCompat
 
 class MyInputMethodService : InputMethodService(),
     KeyboardView.OnKeyboardActionListener,
@@ -28,126 +29,157 @@ class MyInputMethodService : InputMethodService(),
     private var keyboard: Keyboard? = null
     private var candidatesContainer: LinearLayout? = null
     private var candidatesScroll: HorizontalScrollView? = null
+    private var langPillsContainer: LinearLayout? = null
+    private var btnKbMode: TextView? = null
     private var wordPredictor: WordPredictor? = null
     private var clipboard: KeyboardClipboard? = null
     private var prefs: KeyboardPreferences? = null
 
-    // Caps states: NONE → SHIFT (one letter) → CAPS_LOCK (stays on)
     private enum class CapsState { NONE, SHIFT, CAPS_LOCK }
-    private var capsState     = CapsState.NONE
-    private var isSymbols     = false
-    private var showClipboard = false
-    private var showEmoji     = false
-    private var emojiCategory = 0
-    private var currentInput  = StringBuilder()
+    private var capsState      = CapsState.NONE
+    private var phoneticBuffer = StringBuilder()
+    private var isPhoneticMode = false
+    private var isSymbols      = false
+    private var showEmoji      = false
+    private var emojiCategory  = 0
+    private var currentInput   = StringBuilder()
+    private var awaitingZWJ    = false
 
-    // ── Emoji categories ────────────────────────────────────────
-    private val emojiCategories = listOf(
-        "😀" to listOf(
-            "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗",
-            "😙","😚","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏",
-            "😒","🙄","😬","🤥","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵",
-            "🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨",
-            "😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿",
-            "💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"
-        ),
-        "👋" to listOf(
-            "👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇",
-            "☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾",
-            "🦵","🦶","👂","🦻","👃","🧠","🦷","🦴","👀","👁","👅","👄","💋","🫀","🫁","🧬","🦱","🦰",
-            "🦳","🦲","👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","🧓","👴","👵","🙍","🙎","🙅","🙆",
-            "💁","🙋","🧏","🙇","🤦","🤷","👮","🕵","💂","🥷","👷","🫅","🤴","👸","👳","👲","🧕","🤵",
-            "👰","🤰","🤱","👼","🎅","🤶","🧑‍🎄","🦸","🦹","🧙","🧝","🧛","🧟","🧌","🧞","🧜","🧚"
-        ),
-        "❤️" to listOf(
-            "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝",
-            "💟","☮️","✝️","☪️","🕉","✡️","🔯","🕎","☯️","☦️","🛐","⛎","♈","♉","♊","♋","♌","♍",
-            "♎","♏","♐","♑","♒","♓","⛎","🆔","⚛️","🉑","☢️","☣️","📴","📳","🈶","🈚","🈸","🈺",
-            "🈷️","✴️","🆚","💮","🉐","㊙️","㊗️","🈴","🈵","🈹","🈲","🅰️","🅱️","🆎","🆑","🅾️","🆘",
-            "⛔","📛","🚫","💯","💢","♨️","🚷","🚯","🚳","🚱","🔞","📵","🚭","❗","❕","❓","❔","‼️",
-            "⁉️","🔅","🔆","〽️","⚠️","🔱","⚜️","🔰","♻️","✅","🈯","💹","❎","🌐","🌀","➿","🌁"
-        ),
-        "🐶" to listOf(
-            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉",
-            "🙊","🐒","🐔","🐧","🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🌱","🌲","🌳",
-            "🌴","🌵","🎋","🌾","🍀","🌿","☘️","🍃","🍂","🍁","🍄","🐚","🌾","💐","🌷","🌹","🥀","🌺",
-            "🌸","🌼","🌻","🌞","🌝","🌛","🌜","🌚","🌕","🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌙","🌟",
-            "⭐","🌠","⛅","⛈","🌤","🌥","🌦","🌧","🌨","🌩","🌪","🌫","🌬","🌀","🌈","🌂","☂️","☔",
-            "⛱","⚡","❄️","☃️","⛄","🌊","💧","💦","🔥","🌋","🌎","🌍","🌏","🗺","🧭","🏔","⛰"
-        ),
-        "🍎" to listOf(
-            "🍎","🍊","🍋","🍇","🍓","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒",
-            "🌶","🥕","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🥞","🧇","🥓","🥩",
-            "🍗","🍖","🌭","🍔","🍟","🍕","🌮","🌯","🥙","🧆","🥚","🍝","🍜","🍲","🍛","🍣","🍱","🥟",
-            "🍤","🍙","🍚","🍘","🍥","🥮","🍢","🧁","🍰","🎂","🍮","🍭","🍬","🍫","🍿","🍩","🍪","🌰",
-            "🥜","🍯","🥛","🍼","☕","🍵","🧃","🥤","🧋","🍶","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🧉",
-            "🍾","🥄","🍴","🍽","🥢","🧂","🫙","🧊","🥡","🥠","🍱","🧁","🍮","🥧","🧇","🥞","🫕"
-        ),
-        "🚗" to listOf(
-            "🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍","🛵","🚲","🛴",
-            "🛹","🛼","🚏","⛽","🛣","🛤","🗺","🏔","⛰","🌋","🗻","🏕","🏖","🏜","🏝","🏞","🏟","🏛",
-            "🏗","🏘","🏚","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰",
-            "💒","🗼","🗽","⛪","🕌","🛕","🕍","⛩","🕋","⛲","⛺","🌁","🌃","🏙","🌄","🌅","🌆","🌇",
-            "🌉","♨️","🌌","🌠","🎇","🎆","🗾","🎑","⛱","🗿","🚀","✈️","🛸","🚁","🛶","⛵","🚤","🛥",
-            "🛳","⛴","🚢","🛩","🛫","🛬","💺","🚂","🚃","🚄","🚅","🚆","🚇","🚈","🚉","🚊","🚝","🚞"
-        ),
-        "⚽" to listOf(
-            "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🥍","🏑","🏏","🪃",
-            "⛳","🏹","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🪁","🎱","🔮","🎮","🕹","🎰","🎲","🧩","🧸",
-            "♟","🪆","🪅","🎭","🎨","🖼","🎪","🤹","🎠","🎡","🎢","🎪","🎤","🎧","🎼","🎵","🎶","🎷",
-            "🪗","🎸","🎹","🎺","🎻","🪘","🥁","🪩","🎬","🎥","📽","🎞","📞","☎️","📟","📠","📺","📷",
-            "📸","📹","🎙","🎚","🎛","🧭","⏱","⏲","⏰","🕰","⌛","⏳","📡","🔋","🔌","💡","🔦","🕯",
-            "🪔","🧯","🛢","💰","💴","💵","💶","💷","💸","💳","🪙","💹","💱","💲","✉️","📧","📨","📩"
-        ),
-        "🎉" to listOf(
-            "🎉","🎊","🎈","🎁","🎀","🎗","🎟","🎫","🏆","🥇","🥈","🥉","🎖","🏅","🎪","🤹","🎭","🎨",
-            "🖼","🎠","🎡","🎢","🎪","🎤","🎧","🎼","🎵","🎶","🎷","🎸","🎹","🎺","🎻","🥁","🪘","🎬",
-            "🎥","📽","🎞","🎮","🕹","🎯","🎲","🧩","🧸","♟","🪆","🪅","🎴","🃏","🀄","🎭","🎪","🎠",
-            "🌟","⭐","🌠","🎆","🎇","✨","🎍","🎋","🎃","🎑","🎄","🎆","🎇","🧧","🎐","🎏","🎑","🎀",
-            "🎁","🎗","🎟","🎫","🎖","🏆","🥇","🎈","🎉","🎊","🎋","🎌","🎍","🎎","🎏","🎐","🎑","🧧"
-        )
+    // ── Wijesekara shift map ──────────────────────────────────────
+    // Exact values from spec, verified with python3 ord()
+    //
+    // Row 1 (Q-P):
+    //   Q: ු(3540)→ූ(3542)    W: අ(3461)→උ(3467)    E: ැ(3536)→ෑ(3537)
+    //   R: ර(3515)→ඍ(3469)    T: එ(3473)→ඒ(3474)    Y: හ(3524)→ඓ(3475)
+    //   U: ම(3512)→ඖ(3478)    I: ස(3523)→ෂ(3522)    O: ද(3503)→ධ(3504)
+    //   P: ච(3488)→ඡ(3489)
+    // Row 2 (A-;):
+    //   A: ්(3530)→ා(3535)    S: ි(3538)→ී(3539)    D: ා(3535)→ෘ(3544)
+    //   F: ෙ(3545)→ෆ(3526)    G: ට(3495)→ඨ(3496)    H: ය(3514)→[ZWJ+ය]
+    //   J: ව(3520)→[ළ+ු]      K: න(3505)→ණ(3499)    L: ක(3482)→ඛ(3483)
+    //   ;: ත(3501)→ථ(3502)
+    // Row 3 (Z-M):
+    //   Z: ං(3458)→ඃ(3459)    X: ජ(3490)→ඣ(3491)    C: ඩ(3497)→ඪ(3498)
+    //   V: ඉ(3465)→ඊ(3466)    B: බ(3510)→භ(3511)    N: ප(3508)→ඵ(3509)
+    //   M: ල(3517)→ළ(3525)    ,: ග(3484)→ඝ(3485)    .: .(46)→?(63)
+    // Number row:
+    //   1→! 2→@ 3→# 4→$ 5→% 6→^ 7→& 8→* 9→( 0→) -→_ =→+
+    private val wijShiftMap = mapOf(
+        // Row 1
+        3540 to 3542, 3461 to 3467, 3536 to 3537, 3515 to 3469, 3473 to 3474,
+        3524 to 3475, 3512 to 3478, 3523 to 3522, 3503 to 3504, 3488 to 3489,
+        // Row 2 (simple substitutions — H and J handled specially)
+        3530 to 3535, 3538 to 3539,
+        // D key: ා(3535) normal, Shift→ෘ(3544) — note ා also on A key
+        // Since both A and D emit different codes in XML:
+        //   A key codes=3530 (්), D key codes=3535 (ා)
+        3535 to 3544, // ා → ෘ  (D key shift)
+        3545 to 3526, // ෙ → ෆ  (F key shift)
+        3495 to 3496, // ට → ඨ
+        // H(3514)→ZWJ compound, J(3520)→ළු: handled in commitWijesekara
+        3505 to 3499, 3482 to 3483, 3501 to 3502,
+        // Row 3
+        3458 to 3459, 3490 to 3491, 3497 to 3498, 3465 to 3466,
+        3510 to 3511, 3508 to 3509, 3517 to 3525, 3484 to 3485,
+        46   to 63,
+        // Number row
+        49 to 33, 50 to 64, 51 to 35, 52 to 36, 53 to 37,
+        54 to 94, 55 to 38, 56 to 42, 57 to 40, 48 to 41,
+        45 to 95, 61 to 43
     )
 
+    private val NORMAL_YA  = 3514  // H key
+    private val NORMAL_WA  = 3520  // J key
+    private val ZWJ        = "\u200D"
+
+    // ── Phonetic maps ─────────────────────────────────────────────
+    private val sinhalaPhoneticMap = listOf(
+        "aa" to "ආ","ii" to "ඊ","uu" to "ඌ","ee" to "ඒ","oo" to "ඕ",
+        "kh" to "ඛ","gh" to "ඝ","ng" to "ඞ","ch" to "ච","jh" to "ඣ",
+        "ny" to "ඤ","th" to "ථ","dh" to "ධ","ph" to "ඵ","bh" to "භ",
+        "sh" to "ශ","ll" to "ළ","nj" to "ඤ",
+        "a" to "අ","i" to "ඉ","u" to "උ","e" to "එ","o" to "ඔ",
+        "k" to "ක","g" to "ග","c" to "ච","j" to "ජ","t" to "ට",
+        "d" to "ඩ","n" to "න","p" to "ප","b" to "බ","m" to "ම",
+        "y" to "ය","r" to "ර","l" to "ල","v" to "ව","w" to "ව",
+        "s" to "ස","h" to "හ","f" to "ෆ","q" to "ක","x" to "ෂ","z" to "ශ"
+    )
+    private val tamilPhoneticMap = listOf(
+        "aa" to "ஆ","ii" to "ஈ","uu" to "ஊ","ee" to "ஏ","oo" to "ஓ",
+        "ai" to "ஐ","au" to "ஔ","ng" to "ங","ch" to "ச","ny" to "ஞ",
+        "th" to "த","nn" to "ண","nh" to "ன","zh" to "ழ","ll" to "ள","rr" to "ற",
+        "a" to "அ","i" to "இ","u" to "உ","e" to "எ","o" to "ஒ",
+        "k" to "க","c" to "ச","t" to "ட","p" to "ப","m" to "ம",
+        "y" to "ய","r" to "ர","l" to "ல","v" to "வ","w" to "வ",
+        "s" to "ச","h" to "ஹ","n" to "ந","z" to "ழ","f" to "ஃ",
+        "j" to "ஜ","g" to "க","d" to "ட","b" to "ப","q" to "க"
+    )
+
+    // ── Emoji ─────────────────────────────────────────────────────
+    private val emojiCategories = listOf(
+        "Faces" to listOf("😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠","💩","🤡","👹","👺","👻","👽","👾","🤖"),
+        "Hands" to listOf("👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍","💅","🤳","💪","🦾","🦵","🦶","👂","🦻","👃","🧠","🦷","🦴","👀","👁","👅","👄","💋","👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","🧓","👴","👵","🙍","🙎","🙅","🙆","💁","🙋","🧏","🙇","🤦","🤷"),
+        "Hearts" to listOf("❤","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣","💕","💞","💓","💗","💖","💘","💝","💟","☮","✝","☪","🕉","✡","🔯","🕎","☯","☦","⚠","🚫","❌","✅","💯","✨","🌟","⭐","🔥","💫","🎉","🎊","🎈","🎁","🏆","🥇","🥈","🥉"),
+        "Animals" to listOf("🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🐛","🦋","🐌","🐞","🐜","🦟","🦗","🦂","🐢","🐍","🦎","🦖","🦕","🐙","🦑","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆","🦓","🦍","🦧","🦣","🐘","🦛","🦏","🐪","🐫","🦒","🦘"),
+        "Food" to listOf("🍎","🍊","🍋","🍇","🍓","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶","🥕","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🥞","🧇","🥓","🥩","🍗","🍖","🌭","🍔","🍟","🍕","🌮","🌯","🥙","🧆","🍝","🍜","🍲","🍛","🍣","🍱","🥟","🍤","🍙","🍚","🍘","🍥","🥮","🍢","🧁","🍰","🎂","🍮","🍭","🍬","🍫","🍿","🍩","🍪","☕","🍵","🧃","🥤","🧋","🍶","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🧉","🍾"),
+        "Travel" to listOf("🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍","🛵","🚲","🛴","🛹","🚏","⛽","✈","🚀","🛸","🚁","⛵","🚢","🛥","🛳","⛴","🚂","🚃","🚄","🚅","🚆","🚇","🚈","🚉","🚊","🚝","🚞","🗺","🏔","⛰","🌋","🗻","🏕","🏖","🏜","🏝","🏞","🏟","🏛","🏗","🏘","🏚","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰"),
+        "Sports" to listOf("⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🥍","🏑","🏏","🪃","⛳","🏹","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🎱","🎮","🕹","🎰","🎲","🧩","🧸","♟","🪆","🪅","🎭","🎨","🎤","🎧","🎼","🎵","🎶","🎷","🪗","🎸","🎹","🎺","🎻","🪘","🥁","🎬","🎥"),
+        "Objects" to listOf("💡","🔦","🕯","🪔","🧯","💰","💵","💴","💶","💷","💸","💳","🪙","💹","📈","📉","📊","📋","📌","📍","✂","🗃","🗑","🔒","🔓","🔑","🗝","🔨","🪓","⛏","⚒","🛠","⚔","🔫","🛡","📱","💻","🖥","⌨","🖱","💾","💿","📀","📞","☎","📺","📷","📸","📹","🎥","📚","📖","📰","🗞","📝","✏","🖊","🖋","📏","📐","📎","🖇","📁","📂","🗓","📅","📆","🗒","🗃","🗄")
+    )
+
+    // ── Lifecycle ─────────────────────────────────────────────────
     override fun onCreate() {
         super.onCreate()
-        prefs         = KeyboardPreferences(this)
-        wordPredictor = WordPredictor(this)
-        clipboard     = KeyboardClipboard(this)
-        prefs?.registerListener(this)
+        prefs = KeyboardPreferences(this); wordPredictor = WordPredictor(this)
+        clipboard = KeyboardClipboard(this); prefs?.registerListener(this)
     }
-
-    override fun onDestroy() {
-        prefs?.unregisterListener(this)
-        super.onDestroy()
-    }
+    override fun onDestroy() { prefs?.unregisterListener(this); super.onDestroy() }
 
     override fun onSharedPreferenceChanged(sp: SharedPreferences?, key: String?) {
         when (key) {
-            KeyboardPreferences.KEY_KEY_HEIGHT,
-            KeyboardPreferences.KEY_THEME,
-            KeyboardPreferences.KEY_BG_IMAGE_URI,
-            KeyboardPreferences.KEY_SHOW_BORDER,
-            KeyboardPreferences.KEY_SINHALA_LAYOUT,
-            KeyboardPreferences.KEY_SHOW_NUMPAD,
+            KeyboardPreferences.KEY_KEY_HEIGHT, KeyboardPreferences.KEY_THEME,
+            KeyboardPreferences.KEY_BG_IMAGE_URI, KeyboardPreferences.KEY_SHOW_BORDER,
+            KeyboardPreferences.KEY_SINHALA_LAYOUT, KeyboardPreferences.KEY_SHOW_NUMPAD,
             KeyboardPreferences.KEY_SHOW_POPUP -> applyCurrentPrefs()
             KeyboardPreferences.KEY_ENABLED_LANGS -> {
-                val enabled = prefs?.enabledLanguages ?: listOf(KeyboardPreferences.LANG_EN)
+                val en = prefs?.enabledLanguages ?: listOf(KeyboardPreferences.LANG_EN)
                 val cur = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
-                if (cur !in enabled) prefs?.currentLanguage = enabled.firstOrNull() ?: KeyboardPreferences.LANG_EN
-                setKeyboardLayout()
+                if (cur !in en) prefs?.currentLanguage = en.firstOrNull() ?: KeyboardPreferences.LANG_EN
+                setKeyboardLayout(); rebuildLangPills()
             }
         }
     }
 
     // ── View ──────────────────────────────────────────────────────
-
     override fun onCreateInputView(): View {
-        val inputView       = LayoutInflater.from(this).inflate(R.layout.keyboard_view, null)
-        keyboardView        = inputView.findViewById(R.id.keyboard_view)
-        candidatesContainer = inputView.findViewById(R.id.candidates_container)
-        candidatesScroll    = inputView.findViewById(R.id.candidates_view)
+        val v = LayoutInflater.from(this).inflate(R.layout.keyboard_view, null)
+        keyboardView        = v.findViewById(R.id.keyboard_view)
+        candidatesContainer = v.findViewById(R.id.candidates_container)
+        candidatesScroll    = v.findViewById(R.id.candidates_view)
+        langPillsContainer  = v.findViewById(R.id.lang_pills_container)
+        btnKbMode           = v.findViewById(R.id.btn_kb_mode)
 
-        inputView.findViewById<ImageButton>(R.id.btn_settings)?.setOnClickListener {
+        // Emoji button
+        v.findViewById<TextView>(R.id.btn_emoji)?.setOnClickListener {
+            vibrateKey()
+            showEmoji = !showEmoji
+            if (showEmoji) showEmojiPanel(emojiCategory) else updateCandidates(currentInput.toString())
+        }
+
+        // Keyboard mode button (Wijesekara ↔ Phonetic toggle for SI/TA)
+        v.findViewById<TextView>(R.id.btn_kb_mode)?.setOnClickListener {
+            vibrateKey()
+            val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+            if (lang == KeyboardPreferences.LANG_SI || lang == KeyboardPreferences.LANG_TA) {
+                val cur = prefs?.sinhalaLayout ?: KeyboardPreferences.LAYOUT_PHONETIC
+                prefs?.sinhalaLayout = if (cur == KeyboardPreferences.LAYOUT_PHONETIC)
+                    KeyboardPreferences.LAYOUT_WIJESEKARA else KeyboardPreferences.LAYOUT_PHONETIC
+                setKeyboardLayout(); updateKbModeButton()
+            }
+        }
+
+        // Settings
+        v.findViewById<ImageButton>(R.id.btn_settings)?.setOnClickListener {
             vibrateKey()
             packageManager.getLaunchIntentForPackage(packageName)?.apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -156,13 +188,70 @@ class MyInputMethodService : InputMethodService(),
 
         keyboardView?.setOnKeyboardActionListener(this)
         applyCurrentPrefs()
+        rebuildLangPills()
+        updateKbModeButton()
         updateCandidates("")
-        return inputView
+        return v
     }
 
+    // Rebuild language pills from enabled languages
+    private fun rebuildLangPills() {
+        val container = langPillsContainer ?: return
+        container.removeAllViews()
+        val enabled = prefs?.enabledLanguages ?: listOf(KeyboardPreferences.LANG_EN)
+        val current = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+
+        // Display label for each language
+        fun langLabel(lang: String): String = when (lang) {
+            KeyboardPreferences.LANG_SI -> "සිං"
+            KeyboardPreferences.LANG_TA -> "தமி"
+            else -> "En"
+        }
+
+        enabled.forEach { lang ->
+            val isActive = lang == current
+            val pill = TextView(this).apply {
+                text = langLabel(lang)
+                textSize = 13f
+                typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+                setPadding(dp(10f).toInt(), 0, dp(10f).toInt(), 0)
+                setTextColor(if (isActive) 0xFFFFFFFF.toInt() else 0x88C4B5FD.toInt())
+                // Active pill gets a visible background chip
+                if (isActive) setBackgroundResource(R.drawable.candidate_bar_bg)
+                else setBackgroundColor(0x00000000)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).also { it.setMargins(2, 8, 2, 8) }
+                setOnClickListener {
+                    vibrateKey()
+                    prefs?.currentLanguage = lang
+                    isSymbols = false; capsState = CapsState.NONE; awaitingZWJ = false
+                    phoneticBuffer.clear(); currentInput.clear()
+                    setKeyboardLayout(); rebuildLangPills(); updateCandidates("")
+                }
+            }
+            container.addView(pill)
+        }
+    }
+
+    private fun updateKbModeButton() {
+        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+        val phonetic = prefs?.sinhalaLayout == KeyboardPreferences.LAYOUT_PHONETIC
+        btnKbMode?.text = when {
+            lang == KeyboardPreferences.LANG_SI && phonetic  -> "Pho"
+            lang == KeyboardPreferences.LANG_SI && !phonetic -> "Wij"
+            lang == KeyboardPreferences.LANG_TA && phonetic  -> "Pho"
+            lang == KeyboardPreferences.LANG_TA && !phonetic -> "Dir"
+            else -> "ABC"
+        }
+    }
+
+    private fun dp(v: Float) = android.util.TypedValue.applyDimension(
+        android.util.TypedValue.COMPLEX_UNIT_DIP, v, resources.displayMetrics)
+
     private fun applyCurrentPrefs() {
-        val p  = prefs ?: return
-        val kv = keyboardView ?: return
+        val p = prefs ?: return; val kv = keyboardView ?: return
         if (p.theme == KeyboardPreferences.THEME_CUSTOM && p.bgImageUri.isNotEmpty()) {
             try {
                 val s = contentResolver.openInputStream(Uri.parse(p.bgImageUri))
@@ -170,47 +259,41 @@ class MyInputMethodService : InputMethodService(),
             } catch (_: Exception) { kv.setKeyboardImage(null) }
         } else { kv.setKeyboardImage(null) }
         kv.isPreviewEnabled = p.showPopupKeys
-        kv.refreshPrefs()
-        setKeyboardLayout()
+        kv.refreshPrefs(); setKeyboardLayout()
     }
 
     private fun setKeyboardLayout() {
-        val p    = prefs ?: return
-        val lang = p.currentLanguage
+        val p = prefs ?: return; val lang = p.currentLanguage
+        val phonetic = p.sinhalaLayout == KeyboardPreferences.LAYOUT_PHONETIC
+        isPhoneticMode = (lang == KeyboardPreferences.LANG_SI && phonetic) ||
+                (lang == KeyboardPreferences.LANG_TA && phonetic)
         val xmlId = when {
             isSymbols -> R.xml.symbols
-            lang == KeyboardPreferences.LANG_SI ->
-                if (p.sinhalaLayout == KeyboardPreferences.LAYOUT_WIJESEKARA) R.xml.wijesekara
-                else R.xml.sinhala_phonetic
-            lang == KeyboardPreferences.LANG_TA -> R.xml.tamil
+            lang == KeyboardPreferences.LANG_SI -> if (phonetic) R.xml.sinhala_phonetic else R.xml.wijesekara
+            lang == KeyboardPreferences.LANG_TA -> if (phonetic) R.xml.tamil_phonetic   else R.xml.tamil
             else -> if (p.showNumberPad) R.xml.qwerty else R.xml.qwerty_no_numbers
         }
         keyboard = Keyboard(this, xmlId)
         keyboardView?.keyboard = keyboard
-        // Apply current caps state to keyboard
         keyboard?.isShifted = (capsState != CapsState.NONE)
         keyboardView?.invalidateAllKeys()
+        updateKbModeButton()
     }
 
     // ── Key handling ──────────────────────────────────────────────
-
     override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
-        val ic = currentInputConnection ?: return
-        vibrateKey()
-
-        if (showClipboard && primaryCode != -20) { showClipboard = false; updateCandidates(currentInput.toString()) }
-        if (showEmoji     && primaryCode != -40) { showEmoji = false; updateCandidates(currentInput.toString()) }
+        val ic = currentInputConnection ?: return; vibrateKey()
+        if (showEmoji) { showEmoji = false; updateCandidates(currentInput.toString()) }
 
         when (primaryCode) {
-
             Keyboard.KEYCODE_DELETE -> {
+                awaitingZWJ = false
+                if (isPhoneticMode && phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1)
                 ic.deleteSurroundingText(1, 0)
                 if (currentInput.isNotEmpty()) currentInput.deleteCharAt(currentInput.length - 1)
                 updateCandidates(currentInput.toString())
             }
-
             Keyboard.KEYCODE_SHIFT -> {
-                // Single tap → SHIFT, double tap → CAPS_LOCK, tap again → NONE
                 capsState = when (capsState) {
                     CapsState.NONE      -> CapsState.SHIFT
                     CapsState.SHIFT     -> CapsState.CAPS_LOCK
@@ -219,155 +302,167 @@ class MyInputMethodService : InputMethodService(),
                 keyboard?.isShifted = (capsState != CapsState.NONE)
                 keyboardView?.invalidateAllKeys()
             }
-
             Keyboard.KEYCODE_MODE_CHANGE -> {
-                isSymbols = !isSymbols
-                setKeyboardLayout()
+                isSymbols = !isSymbols; awaitingZWJ = false; phoneticBuffer.clear(); setKeyboardLayout()
             }
-
             Keyboard.KEYCODE_DONE -> {
+                awaitingZWJ = false; phoneticBuffer.clear()
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP,   KeyEvent.KEYCODE_ENTER))
                 learnAndReset()
             }
-
-            -10 -> cycleLang()
-
-            -20 -> {
-                showEmoji     = false
-                showClipboard = !showClipboard
-                if (showClipboard) showClipboardPanel() else updateCandidates(currentInput.toString())
-            }
-
-            -40 -> {
-                showClipboard = false
-                showEmoji     = !showEmoji
-                if (showEmoji) showEmojiPanel(emojiCategory) else updateCandidates(currentInput.toString())
-            }
-
-            32 -> { ic.commitText(" ", 1); learnAndReset() }
-
+            32 -> { awaitingZWJ = false; phoneticBuffer.clear(); ic.commitText(" ", 1); learnAndReset() }
             else -> {
-                if (primaryCode > 0) {
-                    var ch = primaryCode.toChar()
-                    if (capsState != CapsState.NONE && ch.isLetter()) ch = ch.uppercaseChar()
-                    ic.commitText(ch.toString(), 1)
-                    currentInput.append(ch)
-                    updateCandidates(currentInput.toString())
-
-                    // After typing one letter in SHIFT mode, go back to NONE
-                    if (capsState == CapsState.SHIFT) {
-                        capsState = CapsState.NONE
-                        keyboard?.isShifted = false
-                        keyboardView?.invalidateAllKeys()
-                    }
-                    // CAPS_LOCK stays active
+                if (primaryCode <= 0) return
+                val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+                val isWij = lang == KeyboardPreferences.LANG_SI &&
+                        prefs?.sinhalaLayout == KeyboardPreferences.LAYOUT_WIJESEKARA && !isSymbols
+                when {
+                    isWij         -> commitWijesekara(primaryCode, ic)
+                    isPhoneticMode -> handlePhonetic(primaryCode, ic, lang)
+                    else           -> handleDirect(primaryCode, ic)
                 }
             }
         }
     }
 
-    private fun cycleLang() {
-        val enabled = prefs?.enabledLanguages ?: listOf(KeyboardPreferences.LANG_EN)
-        if (enabled.size <= 1) return
-        val cur  = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
-        val next = enabled[(enabled.indexOf(cur) + 1) % enabled.size]
-        prefs?.currentLanguage = next
-        isSymbols = false; capsState = CapsState.NONE
-        currentInput.clear(); setKeyboardLayout(); updateCandidates("")
+    private fun commitWijesekara(code: Int, ic: android.view.inputmethod.InputConnection) {
+        val shifted = capsState != CapsState.NONE
+
+        // ZWJ compound: if awaiting ZWJ, prefix ZWJ before next char
+        if (awaitingZWJ && code != 3530 /* ් */) {
+            val out = if (shifted) wijShiftMap.getOrDefault(code, code) else code
+            ic.commitText("$ZWJ${out.toChar()}", 1)
+            currentInput.append("$ZWJ${out.toChar()}")
+            awaitingZWJ = false; afterWij(shifted); return
+        }
+
+        // Special shifted multi-char outputs
+        if (shifted) {
+            when (code) {
+                NORMAL_YA -> { // H key Shift → ්‍ය
+                    ic.commitText("${3530.toChar()}$ZWJ${3514.toChar()}", 1)
+                    currentInput.append("${3530.toChar()}$ZWJ${3514.toChar()}")
+                    afterWij(true); return
+                }
+                NORMAL_WA -> { // J key Shift → ළු
+                    ic.commitText("${3525.toChar()}${3540.toChar()}", 1)
+                    currentInput.append("${3525.toChar()}${3540.toChar()}")
+                    afterWij(true); return
+                }
+            }
+        }
+
+        val out = if (shifted) wijShiftMap.getOrDefault(code, code) else code
+        ic.commitText(out.toChar().toString(), 1)
+        currentInput.append(out.toChar())
+        updateCandidates(currentInput.toString())
+        afterWij(shifted)
     }
 
-    // ── Panels ────────────────────────────────────────────────────
+    private fun afterWij(wasShifted: Boolean) {
+        updateCandidates(currentInput.toString())
+        if (wasShifted && capsState == CapsState.SHIFT) {
+            capsState = CapsState.NONE; keyboard?.isShifted = false; keyboardView?.invalidateAllKeys()
+        }
+    }
+
+    override fun onText(text: CharSequence?) {
+        text ?: return
+        val ic = currentInputConnection ?: return
+        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+        val isWij = lang == KeyboardPreferences.LANG_SI &&
+                prefs?.sinhalaLayout == KeyboardPreferences.LAYOUT_WIJESEKARA
+        // Long-press ් then selecting "්‍" popup → set ZWJ mode
+        if (isWij && text.toString() == "්‍") { awaitingZWJ = true; return }
+        ic.commitText(text, 1); currentInput.append(text)
+        updateCandidates(currentInput.toString())
+    }
+
+    private fun handlePhonetic(code: Int, ic: android.view.inputmethod.InputConnection, lang: String) {
+        val ch = code.toChar()
+        if (ch.isLetter()) {
+            phoneticBuffer.append(ch.lowercaseChar()); ic.commitText(ch.toString(), 1); tryPhoneticConvert(lang)
+        } else { phoneticBuffer.clear(); ic.commitText(ch.toString(), 1) }
+    }
+
+    private fun handleDirect(code: Int, ic: android.view.inputmethod.InputConnection) {
+        var ch = code.toChar()
+        if (capsState != CapsState.NONE && ch.isLetter()) ch = ch.uppercaseChar()
+        ic.commitText(ch.toString(), 1); currentInput.append(ch); updateCandidates(currentInput.toString())
+        if (capsState == CapsState.SHIFT) { capsState = CapsState.NONE; keyboard?.isShifted = false; keyboardView?.invalidateAllKeys() }
+    }
+
+    private fun tryPhoneticConvert(lang: String) {
+        val buf = phoneticBuffer.toString()
+        val map = if (lang == KeyboardPreferences.LANG_TA) tamilPhoneticMap else sinhalaPhoneticMap
+        for (len in minOf(3, buf.length) downTo 1) {
+            val s = buf.takeLast(len); val m = map.firstOrNull { it.first == s } ?: continue
+            currentInputConnection?.deleteSurroundingText(len, 0)
+            currentInputConnection?.commitText(m.second, 1)
+            repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
+            currentInput.append(m.second); updateCandidates(currentInput.toString()); return
+        }
+        updateCandidates(currentInput.toString())
+    }
 
     private fun updateCandidates(input: String) {
-        val c = candidatesContainer ?: return
-        c.removeAllViews()
+        val c = candidatesContainer ?: return; c.removeAllViews()
         if (!(prefs?.showPredictions ?: true)) return
-        val lang   = prefs?.currentLanguage ?: "EN"
-        val words  = wordPredictor?.getSuggestions(input, lang) ?: emptyList()
+        val lang = prefs?.currentLanguage ?: "EN"
+        val words = wordPredictor?.getSuggestions(input, lang) ?: emptyList()
         val emojis = if (lang == KeyboardPreferences.LANG_EN && input.isNotEmpty())
             wordPredictor?.getEmojiSuggestions(input) ?: emptyList() else emptyList()
         (words + emojis).take(8).forEach { w -> addChip(c, w) { commitSuggestion(w) } }
     }
 
     private fun showEmojiPanel(catIndex: Int) {
-        val c = candidatesContainer ?: return
-        c.removeAllViews()
+        val c = candidatesContainer ?: return; c.removeAllViews()
         emojiCategory = catIndex.coerceIn(0, emojiCategories.lastIndex)
 
-        // Category tabs
-        emojiCategories.forEachIndexed { idx, (icon, _) ->
-            val tab = TextView(this).apply {
-                text = icon
-                textSize = 18f
-                setPadding(14, 0, 14, 0)
+        // Category tab icons
+        val catIcons = listOf("😀","👋","❤","🐶","🍎","🚗","⚽","💡")
+        catIcons.forEachIndexed { idx, icon ->
+            val isActive = idx == emojiCategory
+            c.addView(TextView(this).apply {
+                text = icon; textSize = 20f
+                setPadding(dp(8f).toInt(), 0, dp(8f).toInt(), 0)
                 gravity = android.view.Gravity.CENTER_VERTICAL
+                alpha = if (isActive) 1.0f else 0.45f
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
-                ).also { it.setMargins(2, 4, 2, 4) }
-                // Highlight active tab
-                if (idx == emojiCategory) {
-                    setBackgroundResource(R.drawable.candidate_bar_bg)
-                }
-                setOnClickListener {
-                    emojiCategory = idx
-                    showEmojiPanel(idx)
-                }
-            }
-            c.addView(tab)
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT
+                ).also { it.setMargins(1, 5, 1, 5) }
+                if (isActive) setBackgroundResource(R.drawable.candidate_bar_bg)
+                setOnClickListener { emojiCategory = idx; showEmojiPanel(idx) }
+            })
         }
-
-        // Divider
         c.addView(View(this).apply {
             layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
                 .also { it.setMargins(6, 8, 6, 8) }
-            setBackgroundColor(0x33A78BFA)
+            setBackgroundColor(0x55A78BFA)
         })
-
-        // Emojis for this category
+        // Emoji chips for selected category — large, easy to tap
         emojiCategories[emojiCategory].second.forEach { emoji ->
-            addChip(c, emoji) {
-                currentInputConnection?.commitText(emoji, 1)
-                // Keep panel open
-            }
-        }
-    }
-
-    private fun showClipboardPanel() {
-        val c = candidatesContainer ?: return
-        c.removeAllViews()
-        val items = clipboard?.getAll() ?: emptyList()
-        if (items.isEmpty()) { addChip(c, "📋 Empty") {}; return }
-        items.take(10).forEach { item ->
-            val s = if (item.length > 28) item.take(25) + "…" else item
-            addChip(c, s) {
-                currentInputConnection?.commitText(item, 1)
-                showClipboard = false; updateCandidates(currentInput.toString())
-            }
+            c.addView(TextView(this).apply {
+                text = emoji; textSize = 22f
+                setPadding(dp(6f).toInt(), 0, dp(6f).toInt(), 0)
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT
+                ).also { it.setMargins(2, 4, 2, 4) }
+                setOnClickListener { currentInputConnection?.commitText(emoji, 1) }
+            })
         }
     }
 
     private fun addChip(container: LinearLayout, text: String, onClick: () -> Unit) {
         container.addView(TextView(this).apply {
-            this.text = text; textSize = 14f
-            setPadding(18, 0, 18, 0)
-            setTextColor(chipTextColor())
-            setBackgroundResource(R.drawable.candidate_bar_bg)
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            ).also { it.setMargins(3, 5, 3, 5) }
+            this.text = text; textSize = 14f; setPadding(18, 0, 18, 0)
+            setTextColor(if (prefs?.theme in listOf(KeyboardPreferences.THEME_DARK, KeyboardPreferences.THEME_OCEAN, KeyboardPreferences.THEME_SUNSET)) 0xFFEEDDFF.toInt() else 0xFF1E0A3C.toInt())
+            setBackgroundResource(R.drawable.candidate_bar_bg); gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT).also { it.setMargins(3, 5, 3, 5) }
             setOnClickListener { onClick() }
         })
-    }
-
-    private fun chipTextColor(): Int = when (prefs?.theme) {
-        KeyboardPreferences.THEME_DARK,
-        KeyboardPreferences.THEME_OCEAN,
-        KeyboardPreferences.THEME_SUNSET -> 0xFFEEDDFF.toInt()
-        else -> 0xFF1E0A3C.toInt()
     }
 
     private fun commitSuggestion(word: String) {
@@ -385,24 +480,21 @@ class MyInputMethodService : InputMethodService(),
     private fun vibrateKey() {
         if (!(prefs?.vibrateOnKey ?: true)) return
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                 (getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
                     ?.vibrate(VibrationEffect.createOneShot(14, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                val v = getSystemService(VIBRATOR_SERVICE) as? Vibrator
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                    v?.vibrate(VibrationEffect.createOneShot(14, VibrationEffect.DEFAULT_AMPLITUDE))
+            else {
+                @Suppress("DEPRECATION") val v = getSystemService(VIBRATOR_SERVICE) as? Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) v?.vibrate(VibrationEffect.createOneShot(14, VibrationEffect.DEFAULT_AMPLITUDE))
                 else @Suppress("DEPRECATION") v?.vibrate(14)
             }
         } catch (_: Exception) {}
     }
 
-    override fun swipeLeft()  { cycleLang() }
-    override fun swipeRight() { cycleLang() }
+    override fun swipeLeft()  { vibrateKey(); val en = prefs?.enabledLanguages ?: return; if (en.size <= 1) return; val c = prefs?.currentLanguage ?: en[0]; prefs?.currentLanguage = en[(en.indexOf(c)+1)%en.size]; isSymbols=false; capsState=CapsState.NONE; awaitingZWJ=false; phoneticBuffer.clear(); currentInput.clear(); setKeyboardLayout(); rebuildLangPills(); updateCandidates("") }
+    override fun swipeRight() { swipeLeft() }
     override fun onPress(p: Int) {}
     override fun onRelease(p: Int) {}
-    override fun onText(t: CharSequence?) { currentInputConnection?.commitText(t, 1) }
     override fun swipeDown() {}
     override fun swipeUp() {}
 }

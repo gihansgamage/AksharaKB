@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  horizontalGap=0dp — all visual spacing done in MyKeyboardView.kt (innerPad=2.2dp each side)
-  Row 1,2: 10 keys × 10%p = 100% ✓
-  Row 3 ASDF: 9 keys × 10%p = 90%, left offset 5%p → total 95%, right edge clips → use keyEdgeFlags only
-  Row 4 shift: 15%p + 7×10%p + 15%p = 100% ✓
-  Row 5 bottom: 13+11+10+6+33+11+16 = 100% ✓
--->
 <Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
     android:keyWidth="10%p"
     android:keyHeight="44dp"
@@ -38,10 +31,8 @@
         <Key android:codes="112" android:keyLabel="p"  android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- 9 keys centred: 5% left margin + 9×10% + 5% right = 100% -->
     <Row>
-        <Key android:codes="97"  android:keyLabel="a"
-            android:horizontalGap="5%p" android:keyEdgeFlags="left"/>
+        <Key android:codes="97"  android:keyLabel="a"  android:horizontalGap="5%p" android:keyEdgeFlags="left"/>
         <Key android:codes="115" android:keyLabel="s"/>
         <Key android:codes="100" android:keyLabel="d"/>
         <Key android:codes="102" android:keyLabel="f"/>
@@ -52,7 +43,6 @@
         <Key android:codes="108" android:keyLabel="l"  android:keyEdgeFlags="right"/>
     </Row>
 
-    <!-- 15% shift + 7×10% + 15% del = 100% -->
     <Row>
         <Key android:codes="-1"  android:keyLabel="⇧"
             android:keyWidth="15%p" android:keyEdgeFlags="left"
@@ -69,22 +59,18 @@
             android:isRepeatable="true"/>
     </Row>
 
-    <!-- 13+11+10+6+33+11+16=100 -->
+    <!-- Clean bottom row: 18+12+38+12+20=100 -->
     <Row android:rowEdgeFlags="bottom">
-        <Key android:codes="-2"  android:keyLabel="123"
-            android:keyWidth="13%p" android:keyEdgeFlags="left"/>
-        <Key android:codes="-10" android:keyLabel="🌐"
-            android:keyWidth="11%p"/>
-        <Key android:codes="-40" android:keyLabel="😊"
-            android:keyWidth="10%p"/>
-        <Key android:codes="46"  android:keyLabel="."
-            android:keyWidth="6%p"/>
-        <Key android:codes="32"  android:keyLabel="space"
-            android:keyWidth="33%p"/>
+        <Key android:codes="-2"  android:keyLabel="\?123"
+            android:keyWidth="18%p" android:keyEdgeFlags="left"/>
         <Key android:codes="44"  android:keyLabel=","
-            android:keyWidth="11%p"/>
+            android:keyWidth="12%p"/>
+        <Key android:codes="32"  android:keyLabel="space"
+            android:keyWidth="38%p"/>
+        <Key android:codes="46"  android:keyLabel="."
+            android:keyWidth="12%p"/>
         <Key android:codes="-4"  android:keyLabel="↵"
-            android:keyWidth="16%p" android:keyEdgeFlags="right"/>
+            android:keyWidth="20%p" android:keyEdgeFlags="right"/>
     </Row>
 
 </Keyboard>
