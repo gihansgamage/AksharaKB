@@ -25,9 +25,9 @@
         <Key android:codes="3515" android:keyLabel="ර" android:popupCharacters="ඍ"/>
         <Key android:codes="3473" android:keyLabel="එ" android:popupCharacters="ඒ"/>
         <Key android:codes="3524" android:keyLabel="හ" android:popupCharacters="ඓ"/>
-        <Key android:codes="3512" android:keyLabel="ම" android:popupCharacters="ඖ ඹ"/>
+        <Key android:codes="3512" android:keyLabel="ම" android:popupCharacters="ඹ ඖ"/>
         <Key android:codes="3523" android:keyLabel="ස" android:popupCharacters="ෂ"/>
-        <Key android:codes="3503" android:keyLabel="ද" android:popupCharacters="ධ ඳ"/>
+        <Key android:codes="3503" android:keyLabel="ද" android:popupCharacters="ඳ ධ"/>
         <Key android:codes="3488" android:keyLabel="ච" android:popupCharacters="ඡ" android:keyEdgeFlags="right"/>
     </Row>
 
@@ -56,13 +56,13 @@
             android:keyWidth="13%p" android:keyEdgeFlags="left"
             android:isModifier="true" android:isSticky="true"/>
         <Key android:codes="3458" android:keyLabel="ං"  android:keyWidth="9%p"  android:popupCharacters="ඃ"/>
-        <Key android:codes="3490" android:keyLabel="ජ"  android:keyWidth="9%p"  android:popupCharacters="ඣ ඦ"/>
-        <Key android:codes="3497" android:keyLabel="ඩ"  android:keyWidth="9%p"  android:popupCharacters="ඪ ඬ"/>
+        <Key android:codes="3490" android:keyLabel="ජ"  android:keyWidth="9%p"  android:popupCharacters="ඦ ඣ"/>
+        <Key android:codes="3497" android:keyLabel="ඩ"  android:keyWidth="9%p"  android:popupCharacters="ඬ ඪ"/>
         <Key android:codes="3465" android:keyLabel="ඉ"  android:keyWidth="9%p"  android:popupCharacters="ඊ"/>
         <Key android:codes="3510" android:keyLabel="බ"  android:keyWidth="9%p"  android:popupCharacters="භ"/>
         <Key android:codes="3508" android:keyLabel="ප"  android:keyWidth="10%p" android:popupCharacters="ඵ"/>
         <Key android:codes="3517" android:keyLabel="ල"  android:keyWidth="10%p" android:popupCharacters="ළ ඹ"/>
-        <Key android:codes="3484" android:keyLabel="ග"  android:keyWidth="9%p"  android:popupCharacters="ඝ ඟ"/>
+        <Key android:codes="3484" android:keyLabel="ග"  android:keyWidth="9%p"  android:popupCharacters="ඟ ඝ"/>
         <Key android:codes="-5"   android:keyLabel="⌫"
             android:keyWidth="13%p" android:keyEdgeFlags="right"
             android:isRepeatable="true"/>

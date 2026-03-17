@@ -30,7 +30,10 @@ class MyInputMethodService : InputMethodService(),
     private var emojiTabs: LinearLayout? = null
     private var emojiGrid: android.widget.LinearLayout? = null
     private var emojiScrollView: android.widget.ScrollView? = null
+    private var emojiActionBar: LinearLayout? = null
     private var activeCategoryIndex = 0
+    private val recentEmojis = mutableListOf<String>()
+    private val MAX_RECENT = 40
     private var btnSettings: TextView? = null
     private var wordPredictor: WordPredictor? = null
     private var clipboard: KeyboardClipboard? = null
@@ -74,7 +77,7 @@ class MyInputMethodService : InputMethodService(),
     private val wijShiftMap = mapOf(
         // Row 1
         3540 to 3542, 3461 to 3467, 3536 to 3537, 3515 to 3469, 3473 to 3474,
-        3524 to 3475, 3512 to 3478, 3523 to 3522, 3503 to 3504, 3488 to 3489,
+        3524 to 3475, 3512 to 3513, 3523 to 3522, 3503 to 3504, 3488 to 3489,
         // Row 2 (simple substitutions — H and J handled specially)
         3530 to 3535, 3538 to 3539,
         // D key: ා(3535) normal, Shift→ෘ(3544) — note ා also on A key
@@ -122,34 +125,37 @@ class MyInputMethodService : InputMethodService(),
         "j" to "ஜ","g" to "க","d" to "ட","b" to "ப","q" to "க"
     )
 
-    // ── Emoji categories — 1605 total across 10 categories ─────────
+    // ── Emoji categories ─────────────────────────────────────────
     private val emojiCategories = listOf(
         "😀 Smileys" to listOf(
-            "😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","🫠","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🫢","🫣","🤫","🤔","🫡","🤐","🤨","😐","😑","😶","😶‍🌫","😏","😒","🙄","😬","😮‍💨","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","😵‍💫","🤯","🤠","🥳","🥸","😎","🤓","🧐","😕","🫤","😟","🙁","😮","😯","😲","😳","🥺","🥹","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"
+            "😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","🫠","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🫢","🫣","🤫","🤔","🫡","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","😮‍💨","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","😵‍💫","🤯","🤠","🥳","🥸","😎","🤓","🧐","😕","🫤","😟","🙁","😮","😯","😲","😳","🥺","🥹","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾"
         ),
         "👋 People" to listOf(
-            "👋","🤚","🖐","✋","🖖","🫱","🫲","🫳","🫴","🫷","🫸","👌","🤌","🤏","✌","🤞","🫰","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝","🫵","👍","👎","✊","👊","🤛","🤜","👏","🙌","🫶","👐","🤲","🤝","🙏","✍","💅","🤳","💪","🦾","🦿","🦵","🦶","👂","🦻","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","🫦","👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","🧓","👴","👵","🙍","🙎","🙅","🙆","💁","🙋","🧏","🙇","🤦","🤷","👮","🕵","💂","🥷","👷","🫅","🤴","👸","👳","👲","🧕","🤵","👰","🤰","🫃","🫄","🤱","👼","🎅","🤶","🦸","🦹","🧙","🧝","🧛","🧟","🧌","🧞","🧜","🧚","👫","👬","👭","💏","💑","👨‍👩‍👦","👨‍👩‍👧","👩‍👦","👩‍👧","👨‍👦","👨‍👧"
+            "👋","🤚","🖐","✋","🖖","🫱","🫲","🫳","🫴","👌","🤌","🤏","✌","🤞","🫰","🤟","🤘","🤙","👈","👉","👆","👇","☝","🫵","👍","👎","✊","👊","🤛","🤜","👏","🙌","🫶","👐","🤲","🤝","🙏","✍","💅","🤳","💪","🦾","🦿","🦵","🦶","👂","🦻","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","🫦","👶","🧒","👦","👧","🧑","👱","👨","🧔","👩","🧓","👴","👵","🙍","🙎","🙅","🙆","💁","🙋","🧏","🙇","🤦","🤷","👮","🕵","💂","🥷","👷","🤴","👸","👳","👲","🧕","🤵","👰","🤰","🫃","🫄","🤱","👼","🎅","🤶","🦸","🦹","🧙","🧝","🧛","🧟","🧞","🧜","🧚","👫","👬","👭","💏","💑","👨‍👩‍👦","👨‍👩‍👧","👩‍👦","👩‍👧","👨‍👦","👨‍👧"
         ),
         "❤ Hearts" to listOf(
-            "❤","🩷","🧡","💛","💚","💙","🩵","💜","🖤","🩶","🤍","🤎","💔","❤‍🔥","❤‍🩹","❣","💕","💞","💓","💗","💖","💘","💝","💟","☮","✝","☪","🪯","🕉","☸","✡","🔯","🕎","☯","☦","🛐","⛎","♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓","⚛","🉑","☢","☣","📴","📳","🈶","🈚","🈸","🈺","🈷","✴","🆚","💮","🉐","㊙","㊗","🈴","🈵","🈹","🈲","🅰","🅱","🆎","🆑","🅾","🆘","⛔","📛","🚫","💯","💢","♨","🚷","🚯","🚳","🚱","🔞","📵","🚭","❗","❕","❓","❔","‼","⁉","🔅","🔆","〽","⚠","🔱","⚜","🔰","♻","✅","🈯","💹","❎","🌐","🌀","➿","🌁"
+            "❤","🩷","🧡","💛","💚","💙","🩵","💜","🖤","🩶","🤍","🤎","💔","❤‍🔥","❤‍🩹","❣","💕","💞","💓","💗","💖","💘","💝","💟","💋","😍","🥰","😘","🫶","🤗","🫂","💌","💒","🌹","🌺","🌸","🌼","🌻","🌷","🪷","🎁","🎀","🎊","🎉"
         ),
-        "🐾 Animals" to listOf(
-            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐻‍❄","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤","🐣","🐥","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🫏","🐝","🪱","🐛","🦋","🐌","🐞","🐜","🪲","🦟","🦗","🪳","🕷","🦂","🐢","🐍","🦎","🦖","🦕","🐙","🦑","🪼","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆","🦓","🫎","🦍","🦧","🦣","🐘","🦛","🦏","🐪","🐫","🦒","🦘","🦬","🐃","🐂","🐄","🐎","🐖","🐏","🐑","🦙","🐐","🦌","🐕","🐩","🦮","🐈","🪶","🐓","🦃","🦤","🦚","🦜","🦢","🪿","🦩","🕊","🐇","🦝","🦨","🦡","🦫","🦦","🦥","🐁","🐀","🐿","🦔","🐾","🐉","🐲","🌵","🎄","🌲","🌳","🌴","🪵","🌱","🌿","☘","🍀","🎍","🪴","🎋","🍃","🍂","🍁","🪺","🪹","🍄","🌾","💐","🌷","🪷","🌹","🥀","🌺","🌸","🌼","🌻","🌞","🌝","🌛","🌜","🌚","🌕","🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌙","🌟","⭐","🌠","🌌","☁","⛅","🌈","⚡","❄","☃","⛄","🌊","💧","💦","🫧","🌀"
+        "🐶 Animals" to listOf(
+            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐻‍❄","🐨","🐯","🦁","🐮","🐷","🐽","🐸","🐵","🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤","🐣","🐥","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🫏","🐝","🪱","🐛","🦋","🐌","🐞","🐜","🪲","🦟","🦗","🪳","🕷","🦂","🐢","🐍","🦎","🦖","🦕","🐙","🦑","🪼","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆","🦓","🫎","🦍","🦧","🦣","🐘","🦛","🦏","🐪","🐫","🦒","🦘","🦬","🐃","🐂","🐄","🐎","🐖","🐏","🐑","🦙","🐐","🦌","🐕","🐩","🦮","🐈","🐓","🦃","🦤","🦚","🦜","🦢","🪿","🦩","🕊","🐇","🦝","🦨","🦡","🦫","🦦","🦥","🐁","🐀","🐿","🦔","🐾","🐉","🐲"
+        ),
+        "🌿 Nature" to listOf(
+            "🌵","🎄","🌲","🌳","🌴","🪵","🌱","🌿","☘","🍀","🎍","🪴","🎋","🍃","🍂","🍁","🪺","🪹","🍄","🌾","💐","🌷","🪷","🌹","🥀","🌺","🌸","🌼","🌻","🌞","🌝","🌛","🌜","🌚","🌕","🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌙","🌟","⭐","🌠","🌌","☀","🌤","⛅","🌥","☁","🌦","🌧","⛈","🌩","🌨","❄","☃","⛄","🌬","🌀","🌈","🌂","☂","☔","⛱","⚡","🌊","💧","💦","🫧","🌫","🌊","🏔","⛰","🌋","🗻","🏕","🏖","🏜","🏝","🏞","🌅","🌄","🌠","🎇","🎆","🌇","🌆","🏙","🌃","🌉","🌌","🌁"
         ),
         "🍔 Food" to listOf(
             "🍏","🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶","🫑","🌽","🥕","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🧈","🥞","🧇","🥓","🥩","🍗","🍖","🦴","🌭","🍔","🍟","🍕","🫓","🫔","🌮","🌯","🥙","🧆","🥘","🍲","🫕","🍜","🍝","🍢","🍣","🍤","🍙","🍚","🍱","🥟","🦪","🥡","🍛","🥗","🥫","🧁","🍰","🎂","🍮","🍭","🍬","🍫","🍿","🍩","🍪","🌰","🥜","🍯","🧃","🥤","🧋","☕","🍵","🫖","🍶","🍺","🍻","🥂","🍷","🫗","🥃","🍸","🍹","🧉","🍾","🧊","🥄","🍴","🍽","🥢","🫙"
         ),
         "🚗 Travel" to listOf(
-            "🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍","🛵","🛺","🚲","🛴","🛹","🛼","🚏","🛣","🛤","⛽","🛞","🚨","🚥","🚦","🛑","🚧","⚓","🛟","⛵","🛶","🚤","🛳","⛴","🛥","🚢","✈","🛩","🛫","🛬","🪂","💺","🚁","🚟","🚠","🚡","🛰","🚀","🛸","🪐","🌍","🌎","🌏","🧭","🏔","⛰","🌋","🗺","🏕","🏖","🏜","🏝","🏞","🏟","🏛","🏗","🧱","🪨","🛖","🏘","🏚","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰","💒","🗼","🗽","⛪","🕌","🛕","🕍","⛩","🕋","⛲","⛺","🌁","🌃","🏙","🌄","🌅","🌆","🌇","🌉","🗾","🎑","🌐"
+            "🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍","🛵","🛺","🚲","🛴","🛹","🛼","🚏","🛣","🛤","⛽","🛞","🚨","🚥","🚦","🛑","🚧","⚓","🛟","⛵","🛶","🚤","🛳","⛴","🛥","🚢","✈","🛩","🛫","🛬","🪂","💺","🚁","🚟","🚠","🚡","🛰","🚀","🛸","🪐","🌍","🌎","🌏","🧭","🏔","⛰","🌋","🗺","🏕","🏖","🏜","🏝","🏞","🏟","🏛","🏗","🧱","🪨","🛖","🏘","🏚","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰","💒","🗼","🗽","⛪","🕌","🛕","🕍","⛩","🕋","⛲","⛺","🌁","🌃","🏙","🌄","🌅","🌆","🌇","🌉","🗾","🎑"
         ),
         "⚽ Sports" to listOf(
             "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🥍","🏑","🏏","🪃","🥅","⛳","🪁","🛝","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🏋","🤸","⛹","🤺","🤾","🏌","🏇","🧘","🏄","🏊","🤽","🚣","🧗","🚵","🚴","🏆","🥇","🥈","🥉","🏅","🎖","🏵","🎗","🎫","🎟","🎪","🤹","🎭","🩰","🎨","🎬","🎤","🎧","🎼","🎵","🎶","🎷","🪗","🎸","🎹","🎺","🎻","🥁","🪘","🎙","🎚","🎛","📻","🎮","🕹","🎲","♟","🎰","🎠","🎡","🎢"
         ),
         "💡 Objects" to listOf(
-            "📱","💻","🖥","🖨","⌨","🖱","🖲","💽","💾","💿","📀","🎥","📽","🎞","📞","☎","📟","📠","📺","📷","📸","📹","📼","🔍","🔎","🕯","💡","🔦","🏮","🪔","📔","📕","📖","📗","📘","📙","📚","📓","📒","📃","📄","📑","🗒","🗓","📆","📅","📇","📈","📉","📊","📋","📌","📍","✂","🗃","🗄","🗑","🔒","🔓","🔏","🔐","🔑","🗝","🔨","🪓","⛏","⚒","🛠","🗡","⚔","🔫","🪃","🛡","🪚","🔧","🪛","🔩","⚙","🗜","⚖","🪜","🔗","⛓","🪝","🧲","🔮","🧿","🪬","🧸","🪅","🎊","🎉","🪆","🎎","🎐","🎏","🎀","🎁","🎗","🎟","🎫","🏷","📦","📫","📪","📬","📭","📮","🗳","✏","✒","🖋","🖊","📝","💼","📁","📂","🗂","🗞","📰","📏","📐","✂","🧹","🧺","🧻","🪣","🧴","🧷","🧽","🧼","🫧","🪥","🪒","🛒","🚪","🪞","🪟","🛏","🛋","🪑","🚽","🪠","🚿","🛁","🪤","💈","💊","💉","🩸","🧬","🦠","🧫","🧪","🌡","🔭","🩺","🩻","🩹","🩼","💎","💍","👑","👒","🎓","🪖","⛑","💄","💋","👓","🕶","🥽","🌂","☂","🧵","🪡","🧶","🪢","👔","👕","👖","🧣","🧤","🧥","🧦","👗","👘","🥻","🩱","🩲","🩳","👙","👚","👛","👜","👝","🎒","🧳","👞","👟","🥾","🥿","👠","👡","🩰","👢","🌂","☂"
+            "📱","💻","🖥","🖨","⌨","🖱","💽","💾","💿","📀","🎥","📽","🎞","📞","☎","📟","📠","📺","📷","📸","📹","📼","🔍","🔎","🕯","💡","🔦","🏮","🪔","📔","📕","📖","📗","📘","📙","📚","📓","📒","📃","📄","📑","🗒","🗓","📆","📅","📇","📈","📉","📊","📋","📌","📍","✂","🗃","🗄","🗑","🔒","🔓","🔏","🔐","🔑","🗝","🔨","🪓","⛏","⚒","🛠","🗡","⚔","🔫","🪃","🛡","🪚","🔧","🪛","🔩","⚙","🗜","⚖","🪜","🔗","⛓","🪝","🧲","🔮","🧿","🪬","🧸","🪅","🎊","🎉","🪆","🎎","🎐","🎏","🎀","🎁","📦","📫","📪","📬","📭","📮","🗳","✏","✒","🖋","🖊","📝","💼","📁","📂","🗂","🗞","📰","📏","📐","🧹","🧺","🧻","🪣","🧴","🧷","🧽","🧼","🫧","🪥","🪒","🛒","🚪","🪞","🪟","🛏","🛋","🪑","🚽","🪠","🚿","🛁","🪤","💈","💊","💉","🩸","🧬","🦠","🧫","🧪","🌡","🔭","🩺","🩻","🩹","🩼","💎","💍","👑","👒","🎓","🪖","⛑","💄","💋","👓","🕶","🥽","🌂","☂","🧵","🪡","🧶","🪢","👔","👕","👖","🧣","🧤","🧥","🧦","👗","👘","🥻","🩱","🩲","🩳","👙","👚","👛","👜","👝","🎒","🧳","👞","👟","🥾","🥿","👠","👡","🩰","👢"
         ),
         "🔣 Symbols" to listOf(
-            "🔴","🟠","🟡","🟢","🔵","🟣","🟤","⚫","⚪","🟥","🟧","🟨","🟩","🟦","🟪","🟫","⬛","⬜","◼","◻","◾","◽","▪","▫","🔶","🔷","🔸","🔹","🔺","🔻","💠","🔘","🔳","🔲","🔈","🔇","🔉","🔊","📢","📣","🔔","🔕","♾","⚕","♻","⚜","🔰","✅","❎","🆗","🆙","🆕","🆒","🆓","🔝","🆖","🆎","🆑","🅾","🆘","🔃","🔄","🔙","🔚","🔛","🔜","🔝","⬆","↗","➡","↘","⬇","↙","⬅","↖","↕","↔","↩","↪","⤴","⤵","🔀","🔁","🔂","▶","⏩","⏭","⏯","◀","⏪","⏮","🔼","⏫","🔽","⏬","⏸","⏹","⏺","⏏","🎦","📶","📳","📴","💹","🔱","❇","✳","0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟","💯","🔠","🔡","🔤"
+            "🔴","🟠","🟡","🟢","🔵","🟣","🟤","⚫","⚪","🟥","🟧","🟨","🟩","🟦","🟪","🟫","⬛","⬜","◼","◻","◾","◽","▪","▫","🔶","🔷","🔸","🔹","🔺","🔻","💠","🔘","🔳","🔲","🔈","🔇","🔉","🔊","📢","📣","🔔","🔕","♾","⚕","♻","⚜","🔰","✅","❎","🆗","🆙","🆕","🆒","🆓","🔝","🆖","🆎","🆑","🅾","🆘","🔃","🔄","🔙","🔚","🔛","🔜","🔝","⬆","↗","➡","↘","⬇","↙","⬅","↖","↕","↔","↩","↪","⤴","⤵","🔀","🔁","🔂","▶","⏩","⏭","⏯","◀","⏪","⏮","🔼","⏫","🔽","⏬","⏸","⏹","⏺","⏏","🎦","📶","📳","📴","💹","🔱","❇","✳","💯","🔠","🔡","🔤","❗","❕","❓","❔","‼","⁉","⚠","♻","✅","❌","⭕","🔞","📵","🚫","🚳","🚭","🚯","🚱","🚷","📛","⛔"
         ),
         "🏳 Flags" to listOf(
             "🏴‍☠","🏳","🏳‍🌈","🏳‍⚧","🏴","🚩","🎌","🏁",
@@ -241,6 +247,8 @@ class MyInputMethodService : InputMethodService(),
         emojiTabs           = v.findViewById(R.id.emoji_tabs)
         emojiGrid           = v.findViewById(R.id.emoji_grid)
         emojiScrollView     = v.findViewById(R.id.emoji_scroll)
+        emojiActionBar      = v.findViewById(R.id.emoji_action_bar)
+        buildEmojiActionBar()
 
         // Single language switch icon — tap to cycle languages
         v.findViewById<TextView>(R.id.btn_lang_single)?.setOnClickListener {
@@ -276,6 +284,12 @@ class MyInputMethodService : InputMethodService(),
         }
 
         keyboardView?.setOnKeyboardActionListener(this)
+
+        // Long-press popup char selected — commit the char directly
+        keyboardView?.onPopupCharSelected = { ch ->
+            vibrateKey()
+            currentInputConnection?.commitText(ch, 1)
+        }
 
         // Blur behind is applied at window level in onWindowShown()
 
@@ -396,6 +410,7 @@ class MyInputMethodService : InputMethodService(),
         }
         keyboard = Keyboard(this, xmlId)
         keyboardView?.keyboard = keyboard
+        keyboardView?.shiftMap = wijShiftMap   // for correct shifted-label rendering
         keyboard?.isShifted = (capsState != CapsState.NONE)
 
         // For emoji keyboard: populate emoji labels into the keyboard keys
@@ -423,61 +438,91 @@ class MyInputMethodService : InputMethodService(),
     }
 
     private fun buildEmojiPanel(catIndex: Int) {
-        activeCategoryIndex = catIndex.coerceIn(0, emojiCategories.lastIndex)
-        val tabs   = emojiTabs ?: return
-        val grid   = emojiGrid  ?: return
+        // -1 = recent category
+        activeCategoryIndex = catIndex.coerceIn(-1, emojiCategories.lastIndex)
+        val tabs   = emojiTabs   ?: return
+        val grid   = emojiGrid   ?: return
         val scroll = emojiScrollView ?: return
+        val dark   = isDark()
+        val glassColor = if (dark) 0x88252836.toInt() else 0x99FFFFFF.toInt()
+        val tabBg  = if (dark) 0x44FFFFFF else 0x44000000
+        val rowBg  = if (dark) 0x44252836.toInt() else 0x55FFFFFF.toInt()
+        val textCol = if (dark) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
+        val actionBg = glassColor
+
+        // Apply liquid glass background to panel — matches key style
+        emojiPanel?.setBackgroundColor(0x00000000)  // transparent — keys draw their own glass
+        // Apply glass to tab row
+        tabs.parent?.let { (it as? android.view.View)?.setBackgroundColor(glassColor) }
 
         // ── Category tabs ──────────────────────────────────────────
         tabs.removeAllViews()
-        emojiCategories.forEachIndexed { idx, (name, _) ->
-            val icon = name.split(" ").firstOrNull() ?: "?"
+
+        // Recent tab first
+        fun addTab(idx: Int, icon: String) {
             tabs.addView(android.widget.TextView(this).apply {
-                text      = icon
-                textSize  = 20f
-                gravity   = android.view.Gravity.CENTER
+                text     = icon
+                textSize = 18f
+                gravity  = android.view.Gravity.CENTER
                 setPadding(dp(10f).toInt(), 0, dp(10f).toInt(), 0)
-                alpha     = if (idx == activeCategoryIndex) 1f else 0.4f
+                alpha    = if (idx == activeCategoryIndex) 1f else 0.38f
+                background = if (idx == activeCategoryIndex) {
+                    android.graphics.drawable.GradientDrawable().apply {
+                        shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                        cornerRadius = dp(8f)
+                        setColor(tabBg)
+                    }
+                } else null
                 layoutParams = LinearLayout.LayoutParams(
                     android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                setOnClickListener {
-                    buildEmojiPanel(idx)
-                    scroll.smoothScrollTo(0, 0)
-                }
+                ).also { it.setMargins(dp(2f).toInt(), dp(4f).toInt(), dp(2f).toInt(), dp(4f).toInt()) }
+                setOnClickListener { buildEmojiPanel(idx); scroll.smoothScrollTo(0, 0) }
             })
         }
+        addTab(-1, "🕐")   // recent
+        emojiCategories.forEachIndexed { idx, (name, _) ->
+            addTab(idx, name.split(" ").first())
+        }
 
-        // ── Emoji grid — rows of 8 ─────────────────────────────────
+        // ── Emoji grid ─────────────────────────────────────────────
         grid.removeAllViews()
-        val emojis = emojiCategories[activeCategoryIndex].second
+        val emojis = when {
+            activeCategoryIndex == -1 -> recentEmojis.toList().ifEmpty {
+                listOf("😊","❤","👍","😂","🙏","🔥","😍","🤗")
+            }
+            else -> emojiCategories[activeCategoryIndex].second
+        }
         val cols = 8
-        val rowCount = (emojis.size + cols - 1) / cols
-        val dark = isDark()
-        val textCol = if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
 
+        val rowCount = (emojis.size + cols - 1) / cols
         for (row in 0 until rowCount) {
             val rowLayout = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
+                orientation  = LinearLayout.HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
+                    dp(46f).toInt()
+                ).also { it.setMargins(dp(3f).toInt(), dp(2f).toInt(), dp(3f).toInt(), 0) }
+                // Liquid glass row background — alternating subtle tint
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    cornerRadius = dp(10f)
+                    setColor(if (row % 2 == 0) rowBg else 0x00000000)
+                }
             }
             for (col in 0 until cols) {
-                val idx = row * cols + col
-                val emoji = emojis.getOrNull(idx) ?: ""
+                val emoji = emojis.getOrNull(row * cols + col) ?: ""
                 rowLayout.addView(android.widget.TextView(this).apply {
                     text      = emoji
-                    textSize  = 26f
+                    textSize  = 24f
                     gravity   = android.view.Gravity.CENTER
-                    layoutParams = LinearLayout.LayoutParams(
-                        0, dp(48f).toInt(), 1f
-                    )
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
                     if (emoji.isNotBlank()) setOnClickListener {
                         vibrateKey()
                         currentInputConnection?.commitText(emoji, 1)
+                        recentEmojis.remove(emoji)
+                        recentEmojis.add(0, emoji)
+                        if (recentEmojis.size > MAX_RECENT) recentEmojis.removeAt(recentEmojis.lastIndex)
                     }
                 })
             }
@@ -485,8 +530,46 @@ class MyInputMethodService : InputMethodService(),
         }
     }
 
-    // Legacy stub — no longer used
-    private fun populateEmojiKeys() {}
+    private fun buildEmojiActionBar() {
+        val bar = emojiActionBar ?: return
+        bar.removeAllViews()
+        val dark     = isDark()
+        val textCol  = if (dark) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
+        val actionBg = if (dark) 0x88252836.toInt() else 0x99FFFFFF.toInt()
+
+        fun actionKey(label: String, weight: Float, onClick: () -> Unit) =
+            android.widget.TextView(this).apply {
+                text      = label
+                textSize  = 15f
+                gravity   = android.view.Gravity.CENTER
+                setTextColor(textCol)
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    cornerRadius = dp(10f)
+                    setColor(actionBg)
+                }
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, weight)
+                    .also { it.setMargins(dp(3f).toInt(), dp(3f).toInt(), dp(3f).toInt(), dp(3f).toInt()) }
+                setOnClickListener { onClick() }
+            }
+
+        // Order: ABC/සිං | space | ⌫  (language left, delete right — swapped)
+        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+        val abcLabel = when (lang) {
+            KeyboardPreferences.LANG_SI -> "සිං"
+            KeyboardPreferences.LANG_TA -> "தமி"
+            else -> "ABC"
+        }
+        bar.addView(actionKey(abcLabel, 1.5f) {
+            vibrateKey(); isEmoji = false; setKeyboardLayout()
+        })
+        bar.addView(actionKey("space", 4f) {
+            vibrateKey(); currentInputConnection?.commitText(" ", 1)
+        })
+        bar.addView(actionKey("⌫", 1.5f) {
+            vibrateKey(); currentInputConnection?.deleteSurroundingText(1, 0)
+        })
+    }
 
     // ── Key handling ──────────────────────────────────────────────
     override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
@@ -494,15 +577,8 @@ class MyInputMethodService : InputMethodService(),
         // (emoji keyboard handled below via isEmoji state)
 
         when (primaryCode) {
-            // ── Emoji keyboard navigation ─────────────────────
-            in -60..-51 -> {
-                // Category tab tapped (codes -51 to -60 → category index 0-9)
-                emojiCategory = (-primaryCode) - 51
-                emojiPage = 0
-                populateEmojiKeys()
-                keyboardView?.activeCategoryTab = emojiCategory
-                keyboardView?.invalidateAllKeys()
-            }
+            // ── Emoji panel handled via native views — these codes unused ──
+            in -60..-51 -> { /* category tabs handled by buildEmojiPanel onClick */ }
             // -61/-62 arrow keys removed — swipe to page instead
             -70 -> {
                 // Emoji panel handles taps directly via onClick — this code path unused
@@ -637,15 +713,13 @@ class MyInputMethodService : InputMethodService(),
         currentInput.append(ch)
         updateCandidates(currentInput.toString())
 
-        // After typing one character in SHIFT mode:
-        // - Non-symbols: reset shift after one letter
-        // - Symbols: keep shift so user can type multiple shifted symbols
-        if (capsState == CapsState.SHIFT && !isSymbols) {
+        // Only reset SHIFT after typing a letter — not after space/punct.
+        // This way shift stays active until the user actually types a letter or taps shift again.
+        if (capsState == CapsState.SHIFT && !isSymbols && ch.isLetter()) {
             capsState = CapsState.NONE
             keyboard?.isShifted = false
             keyboardView?.invalidateAllKeys()
         }
-        // In symbols+shift mode: no reset — user taps shift again to exit
 
         // English auto-caps: after sentence-ending punctuation + space,
         // automatically activate SHIFT so next letter starts capitalized

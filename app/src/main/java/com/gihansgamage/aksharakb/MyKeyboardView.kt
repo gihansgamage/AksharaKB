@@ -20,6 +20,8 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     var onEmojiSwipe: ((direction: Int) -> Unit)? = null
     var lastTouchX: Float = 0f
     var lastTouchY: Float = 0f
+    /** Set by IME to allow correct shifted-label rendering for Sinhala/special keys */
+    var shiftMap: Map<Int, Int> = emptyMap()
 
     private val keyBodyPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val keyBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
@@ -66,7 +68,123 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         lastTouchY = me.y
         if (isEmojiMode) gestureDetector.onTouchEvent(me)
         handleCustomPreview(me)
+        handleLongPress(me)
         return super.onTouchEvent(me)
+    }
+
+    // ── Long-press popup ──────────────────────────────────────────
+    private val longPressHandler  = android.os.Handler(android.os.Looper.getMainLooper())
+    private var longPressRunnable: Runnable? = null
+    private var longPressKey: Keyboard.Key? = null
+    private var popupWindow: android.widget.PopupWindow? = null
+    private val LONG_PRESS_DELAY = 400L  // ms
+
+    var onPopupCharSelected: ((String) -> Unit)? = null
+
+    private fun handleLongPress(me: MotionEvent) {
+        when (me.action) {
+            MotionEvent.ACTION_DOWN -> {
+                val kb = keyboard ?: return
+                val key = kb.keys?.firstOrNull { k ->
+                    me.x >= k.x && me.x < k.x + k.width &&
+                            me.y >= k.y && me.y < k.y + k.height
+                } ?: return
+                val popupRaw = key.popupCharacters?.toString()?.trim() ?: ""
+                if (popupRaw.isEmpty()) return
+                longPressKey = key
+                val r = Runnable { showPopupChars(key, popupRaw) }
+                longPressRunnable = r
+                longPressHandler.postDelayed(r, LONG_PRESS_DELAY)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                longPressHandler.removeCallbacks(longPressRunnable ?: return)
+                longPressRunnable = null
+                longPressKey = null
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val key = longPressKey ?: return
+                if (me.x < key.x || me.x > key.x + key.width ||
+                    me.y < key.y || me.y > key.y + key.height) {
+                    longPressHandler.removeCallbacks(longPressRunnable ?: return)
+                    longPressRunnable = null
+                    longPressKey = null
+                }
+            }
+        }
+    }
+
+    private fun showPopupChars(key: Keyboard.Key, popupRaw: String) {
+        dismissPopup()
+        val chars = popupRaw.split(" ").filter { it.isNotBlank() }
+        if (chars.isEmpty()) return
+
+        val isDarkTheme = prefs.theme == "dark"
+        val bgColor  = if (isDarkTheme) 0x88252836.toInt() else 0xCCFFFFFF.toInt()
+        val txtColor = if (isDarkTheme) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
+        val cellPx   = dp(52f).toInt()
+        val padPx    = dp(6f).toInt()
+
+        // Build popup view
+        val container = android.widget.LinearLayout(context).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            setPadding(padPx, padPx, padPx, padPx)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = dp(14f)
+                setColor(bgColor)
+                setStroke(dp(0.7f).toInt(), if (isDarkTheme) 0x44FFFFFF else 0x44000000)
+            }
+        }
+
+        chars.forEach { ch ->
+            container.addView(android.widget.TextView(context).apply {
+                text      = ch
+                textSize  = 22f
+                gravity   = android.view.Gravity.CENTER
+                setTextColor(txtColor)
+                layoutParams = android.widget.LinearLayout.LayoutParams(cellPx, cellPx)
+                    .also { it.setMargins(dp(2f).toInt(), 0, dp(2f).toInt(), 0) }
+                setOnClickListener {
+                    onPopupCharSelected?.invoke(ch)
+                    dismissPopup()
+                }
+            })
+        }
+
+        // Measure container
+        container.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED),
+            android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED)
+        )
+        val pw = container.measuredWidth
+        val ph = container.measuredHeight
+
+        popupWindow = android.widget.PopupWindow(container, pw, ph, false).apply {
+            isOutsideTouchable = true
+            isTouchable        = true
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+            setTouchInterceptor { _, ev ->
+                if (ev.action == MotionEvent.ACTION_OUTSIDE) { dismissPopup(); true } else false
+            }
+        }
+
+        // Position above the key
+        val loc = IntArray(2); getLocationInWindow(loc)
+        val kx = loc[0] + key.x + key.width / 2 - pw / 2
+        val ky = loc[1] + key.y - ph - dp(8f).toInt()
+
+        popupWindow?.showAtLocation(this, android.view.Gravity.NO_GRAVITY,
+            kx.coerceAtLeast(0), ky.coerceAtLeast(0))
+
+        // Cancel the key's own action so we don't also type the base char
+        val cancel = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0f, 0f, 0)
+        super.onTouchEvent(cancel)
+        cancel.recycle()
+    }
+
+    private fun dismissPopup() {
+        popupWindow?.dismiss()
+        popupWindow = null
     }
 
     private fun handleCustomPreview(me: MotionEvent) {
@@ -129,15 +247,8 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     private fun dp(v: Float) = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, v, resources.displayMetrics)
 
-    // Static height — cache the largest measured height so all keyboard variants
-    // (with/without number row, emoji panel) maintain the same height.
-    private var cachedHeight = 0
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        val h = measuredHeight
-        if (h > cachedHeight) cachedHeight = h
-        if (cachedHeight > 0) setMeasuredDimension(measuredWidth, cachedHeight)
-    }
+    // ── NO cached height — let layout shrink naturally when number row removed ──
+    // onMeasure uses default KeyboardView behaviour
 
 
 
@@ -362,10 +473,18 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     }
                 }
                 shifted -> {
-                    // Shift active: show shifted variant large, no hint
-                    val popupRaw   = key.popupCharacters?.toString()?.trim() ?: ""
-                    val popupShift = popupRaw.split(" ").firstOrNull()?.trim() ?: ""
-                    val sv         = popupShift.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel }
+                    // Shifted label: use shiftMap for Sinhala/special codes (>127),
+                    // use popupCharacters only for Latin keys (codes 32-127)
+                    val sv = when {
+                        code > 127 && shiftMap.containsKey(code) ->
+                            shiftMap[code]!!.toChar().toString()
+                        code in 32..127 -> {
+                            val popupRaw = key.popupCharacters?.toString()?.trim() ?: ""
+                            val popupFirst = popupRaw.split(" ").firstOrNull()?.trim() ?: ""
+                            popupFirst.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel }
+                        }
+                        else -> shiftedLabel(rawLabel).ifEmpty { rawLabel }
+                    }
                     textPaint.color    = t.textNorm
                     var sz = when {
                         sv.length > 5 -> basePx * 0.46f

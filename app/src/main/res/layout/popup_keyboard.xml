@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Long-press popup keyboard layout.
+  Must use the base KeyboardView (not MyKeyboardView).
+  Keys are auto-populated from android:popupCharacters of the pressed key.
+-->
+<android.inputmethodservice.KeyboardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/keyboard"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/candidate_bar_glass_dark"
+    android:keyBackground="@drawable/key_preview_bg"
+    android:keyTextColor="#FFFFFFFF"
+    android:keyTextSize="20sp"
+    android:labelTextSize="20sp"
+    android:shadowColor="#00000000"
+    android:shadowRadius="0"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"/>
