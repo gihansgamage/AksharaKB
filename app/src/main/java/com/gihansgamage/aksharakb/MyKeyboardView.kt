@@ -301,33 +301,33 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
 
     private fun buildTheme() = if (isDark()) T(
         // ── DARK — deep charcoal keys on transparent background ───
-        key          = 0x88252836.toInt(),   // 53% opacity dark blue-grey
-        keySpec      = 0x881E2030.toInt(),   // 53% opacity special
-        keyActive    = 0xAA3A4880.toInt(),   // 67% opacity active shift
+        key          = 0x66404040.toInt(),   // 40% pure grey
+        keySpec      = 0x66323232.toInt(),   // 40% dark grey
+        keyActive    = 0x88606060.toInt(),   // 53% mid grey active
         // Border: single faint white rim
         border       = 0x28FFFFFF,
-        borderActive = 0xCC8899EE.toInt(),
+        borderActive = 0x99AAAAAA.toInt(),
         // Shadow: offset drop
-        shadow       = 0xAA000000.toInt(),
-        shineHi      = 0x08FFFFFF,           // barely visible, no white line
+        shadow       = 0x66000000.toInt(),
+        shineHi      = 0x14FFFFFF,           // subtle shine
         textNorm     = 0xFFFFFFFF.toInt(),
-        textSpec     = 0xFFDDDDFF.toInt(),
-        textActive   = 0xFFAABBFF.toInt(),
-        capsLineCol  = 0xFF7788EE.toInt(),
+        textSpec     = 0xFFDDDDDD.toInt(),
+        textActive   = 0xFFCCCCCC.toInt(),
+        capsLineCol  = 0xFFAAAAAA.toInt(),
         isLight      = false
     ) else T(
         // ── LIGHT — white keys on transparent background ──────────
-        key          = 0x99FFFFFF.toInt(),   // 60% opacity white
-        keySpec      = 0x99F0F2F9.toInt(),   // 60% opacity off-white
-        keyActive    = 0xAAD0DAFF.toInt(),   // 67% opacity active shift
+        key          = 0x77FFFFFF.toInt(),   // 47% white
+        keySpec      = 0x77EBEBEB.toInt(),   // 47% light grey
+        keyActive    = 0x88D0D0D0.toInt(),   // 53% grey active
         border       = 0x00000000,           // no border — shadow only
-        borderActive = 0x554466BB,
-        shadow       = 0x30000044.toInt(),
+        borderActive = 0x44888888,
+        shadow       = 0x1A000033.toInt(),
         shineHi      = 0x0AFFFFFF,
-        textNorm     = 0xFF3A3A52.toInt(),
-        textSpec     = 0xFF2C2C48.toInt(),
-        textActive   = 0xFF2233AA.toInt(),
-        capsLineCol  = 0xFF3344CC.toInt(),
+        textNorm     = 0xFF2A2A2A.toInt(),
+        textSpec     = 0xFF1A1A1A.toInt(),
+        textActive   = 0xFF555555.toInt(),
+        capsLineCol  = 0xFF777777.toInt(),
         isLight      = true
     )
 
@@ -499,9 +499,16 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     canvas.drawText(sv, kx + kw / 2f, sy, textPaint)
                 }
                 else -> {
-                    // Normal: main label only, centered, no hint
+                    // Show small hint ONLY on specific Sinhala long-press keys
+                    val hintKeyCodes = setOf(3484, 3490, 3497, 3503, 3530)
+                    val popupRaw  = key.popupCharacters?.toString()?.trim() ?: ""
+                    val hintChar  = if (code in hintKeyCodes && popupRaw.isNotEmpty())
+                        popupRaw.split(" ").firstOrNull()?.trim() ?: "" else ""
+
                     if (rawLabel.isNotEmpty()) {
                         textPaint.color = t.textNorm
+                        // Shift main label down slightly if hint is showing
+                        val labelOffY = if (hintChar.isNotEmpty()) dp(3f) else 0f
                         var sz = when {
                             rawLabel.length > 5 -> basePx * 0.46f
                             rawLabel.length > 3 -> basePx * 0.60f
@@ -513,8 +520,17 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                         if (textPaint.measureText(rawLabel) > maxW) {
                             sz *= maxW / textPaint.measureText(rawLabel); textPaint.textSize = sz
                         }
-                        val labelY = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
+                        val labelY = ky + kh * 0.57f + labelOffY - (textPaint.descent() + textPaint.ascent()) / 2f
                         canvas.drawText(rawLabel, kx + kw / 2f, labelY, textPaint)
+                    }
+
+                    // Small hint in top-right corner
+                    if (hintChar.isNotEmpty()) {
+                        hintPaint.color    = if (isDark()) 0xAAFFFFFF.toInt() else 0x99333355.toInt()
+                        hintPaint.textSize = basePx * 0.42f
+                        val hx = ri - dp(2f)
+                        val hy = ky + dp(2f) - hintPaint.ascent()
+                        canvas.drawText(hintChar, hx, hy, hintPaint)
                     }
                 }
             }
