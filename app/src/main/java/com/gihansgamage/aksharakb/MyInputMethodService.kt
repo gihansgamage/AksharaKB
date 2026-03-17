@@ -213,7 +213,7 @@ class MyInputMethodService : InputMethodService(),
         root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         
         // Dynamically update emoji and settings icon colors based on theme
-        val iconColor = if (isDark()) 0xCCFFFFFF.toInt() else 0xFF2A2A2A.toInt()
+        val iconColor = if (isDark()) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
         listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
             root?.findViewById<TextView>(id)?.setTextColor(iconColor)
         }
@@ -240,7 +240,7 @@ class MyInputMethodService : InputMethodService(),
         keyboardView        = v.findViewById(R.id.keyboard_view)
         // Theme-aware colors for candidate bar icons
         val dark = isDark()
-        val iconColor = if (dark) 0xCCFFFFFF.toInt() else 0xFF2A2A2A.toInt()
+        val iconColor = if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
         listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
             v.findViewById<TextView>(id)?.setTextColor(iconColor)
         }
@@ -369,17 +369,11 @@ class MyInputMethodService : InputMethodService(),
     private fun updateKbModeButton() { /* btn_kb_mode removed from layout */ }
 
     private fun updateLangIcon(rootView: android.view.View? = null) {
-        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
-        val label = when (lang) {
-            KeyboardPreferences.LANG_SI -> "🌐සි"
-            KeyboardPreferences.LANG_TA -> "🌐தம்"
-            else                        -> "🌐En"
-        }
         val dark = isDark()
-        val col  = if (dark) 0xCCFFFFFF.toInt() else 0xCC1A1A2E.toInt()
+        val col  = if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
         val root = rootView ?: (keyboardView?.parent as? android.view.View)
         root?.findViewById<TextView>(R.id.btn_lang_single)?.apply {
-            text = label; textSize = 9f; setTextColor(col)
+            text = "🌐"; textSize = 18f; setTextColor(col)
         }
     }
 
@@ -435,6 +429,7 @@ class MyInputMethodService : InputMethodService(),
                 } ?: android.view.ViewGroup.LayoutParams(
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT, kbHeight)
             }
+            buildEmojiActionBar()
             buildEmojiPanel(emojiCategory)
         } else {
             keyboardView?.visibility = android.view.View.VISIBLE
