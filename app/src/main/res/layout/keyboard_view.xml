@@ -5,7 +5,6 @@
     android:orientation="vertical"
     android:background="@android:color/transparent"
     android:paddingTop="6dp">
-
     <!-- Candidate bar -->
     <LinearLayout
         android:id="@+id/candidate_bar"

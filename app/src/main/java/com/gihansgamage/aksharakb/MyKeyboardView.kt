@@ -216,17 +216,15 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         val keyX   = key.x.toFloat()
         val keyY   = key.y.toFloat()
         val keyW   = key.width.toFloat()
-        val keyH   = key.height.toFloat()
-        val size   = dp(48f)
+        val size   = dp(50f)
         val cx     = keyX + keyW / 2f
-        val cy     = keyY - size * 0.3f
-        val r      = dp(10f)
-        // Draw preview as an overlay by posting an invalidate with preview state
-        previewRect.set(cx - size / 2f, cy - size / 2f, cx + size / 2f, cy + size / 2f)
+        // Position preview fully ABOVE the key with a gap
+        val cy     = keyY - size - dp(4f)
+        previewRect.set(cx - size / 2f, cy, cx + size / 2f, cy + size)
         previewLabel = label
         invalidate(
-            (previewRect.left - dp(4f)).toInt(),
-            (previewRect.top  - dp(4f)).toInt(),
+            (previewRect.left  - dp(4f)).toInt(),
+            (previewRect.top   - dp(4f)).toInt(),
             (previewRect.right + dp(4f)).toInt(),
             (previewRect.bottom + dp(4f)).toInt()
         )
@@ -305,8 +303,8 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         keySpec      = 0x66323232.toInt(),   // 40% dark grey
         keyActive    = 0x88606060.toInt(),   // 53% mid grey active
         // Border: single faint white rim
-        border       = 0x28FFFFFF,
-        borderActive = 0x99AAAAAA.toInt(),
+        border       = 0x00000000,
+        borderActive = 0x66AAAAAA.toInt(),
         // Shadow: offset drop
         shadow       = 0x66000000.toInt(),
         shineHi      = 0x14FFFFFF,           // subtle shine
@@ -320,8 +318,8 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         key          = 0x77FFFFFF.toInt(),   // 47% white
         keySpec      = 0x77EBEBEB.toInt(),   // 47% light grey
         keyActive    = 0x88D0D0D0.toInt(),   // 53% grey active
-        border       = 0x00000000,           // no border — shadow only
-        borderActive = 0x44888888,
+        border       = 0x00000000,
+        borderActive = 0x33888888,
         shadow       = 0x1A000033.toInt(),
         shineHi      = 0x0AFFFFFF,
         textNorm     = 0xFF2A2A2A.toInt(),
@@ -363,7 +361,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         val shifted = kb.isShifted
 
         // Blur shadow — recreate only when blur radius changes
-        val blurR = if (t.isLight) dp(5f) else dp(3f)
+        val blurR = if (t.isLight) dp(8f) else dp(6f)
         if (blurPaint == null || lastBlurR != blurR) {
             blurPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style      = Paint.Style.FILL
@@ -390,7 +388,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
             val bot = ky + kh - gap
 
             // ── 1. Drop shadow ────────────────────────────────────
-            rrect.set(l + dp(1f), top + dp(2f), ri - dp(1f), bot + dp(2f))
+            rrect.set(l + dp(0.5f), top + dp(3f), ri - dp(0.5f), bot + dp(1f))
             canvas.drawRoundRect(rrect, r, r, blurP)
 
             // ── 2. Key body ───────────────────────────────────────
@@ -500,15 +498,13 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                 }
                 else -> {
                     // Show small hint ONLY on specific Sinhala long-press keys
-                    val hintKeyCodes = setOf(3484, 3490, 3497, 3503, 3530)
+                    val hintKeyCodes = setOf(3484, 3490, 3497, 3503)
                     val popupRaw  = key.popupCharacters?.toString()?.trim() ?: ""
                     val hintChar  = if (code in hintKeyCodes && popupRaw.isNotEmpty())
                         popupRaw.split(" ").firstOrNull()?.trim() ?: "" else ""
 
                     if (rawLabel.isNotEmpty()) {
                         textPaint.color = t.textNorm
-                        // Shift main label down slightly if hint is showing
-                        val labelOffY = if (hintChar.isNotEmpty()) dp(3f) else 0f
                         var sz = when {
                             rawLabel.length > 5 -> basePx * 0.46f
                             rawLabel.length > 3 -> basePx * 0.60f
@@ -520,13 +516,14 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                         if (textPaint.measureText(rawLabel) > maxW) {
                             sz *= maxW / textPaint.measureText(rawLabel); textPaint.textSize = sz
                         }
-                        val labelY = ky + kh * 0.57f + labelOffY - (textPaint.descent() + textPaint.ascent()) / 2f
+                        // Main label always vertically centered
+                        val labelY = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
                         canvas.drawText(rawLabel, kx + kw / 2f, labelY, textPaint)
                     }
 
                     // Small hint in top-right corner
                     if (hintChar.isNotEmpty()) {
-                        hintPaint.color    = if (isDark()) 0xAAFFFFFF.toInt() else 0x99333355.toInt()
+                        hintPaint.color    = if (isDark()) 0xAAFFFFFF.toInt() else 0x88222222.toInt()
                         hintPaint.textSize = basePx * 0.42f
                         val hx = ri - dp(2f)
                         val hy = ky + dp(2f) - hintPaint.ascent()

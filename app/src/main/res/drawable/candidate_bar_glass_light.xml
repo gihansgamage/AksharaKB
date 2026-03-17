@@ -1,31 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:left="2dp" android:top="3dp" android:right="2dp" android:bottom="-3dp">
+    <!-- Soft shadow -->
+    <item android:left="6dp" android:top="4dp" android:right="6dp" android:bottom="-4dp">
         <shape android:shape="rectangle">
-            <solid android:color="#1A000000"/>
+            <solid android:color="#18000000"/>
             <corners android:radius="250dp"/>
         </shape>
     </item>
+    <!-- Main glass body — semi-transparent white, no border -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#77FFFFFF"/>
+            <solid android:color="#66FFFFFF"/>
             <corners android:radius="250dp"/>
         </shape>
     </item>
-    <item android:bottom="23dp">
+    <!-- Top shine -->
+    <item android:bottom="24dp">
         <shape android:shape="rectangle">
             <gradient
                 android:startColor="#18FFFFFF"
                 android:endColor="#00FFFFFF"
                 android:angle="270"
                 android:type="linear"/>
-            <corners android:radius="250dp"/>
-        </shape>
-    </item>
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="#00000000"/>
-            <stroke android:width="0.7dp" android:color="#22000000"/>
             <corners android:radius="250dp"/>
         </shape>
     </item>
