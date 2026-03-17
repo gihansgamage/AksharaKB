@@ -206,9 +206,19 @@ class MyInputMethodService : InputMethodService(),
         val root = keyboardView?.rootView
         val glassRes = if (isDark()) R.drawable.candidate_bar_glass_dark
                        else          R.drawable.candidate_bar_glass_light
+        val emojiRes = if (isDark()) R.drawable.emoji_panel_bg_dark
+                       else          R.drawable.emoji_panel_bg_light
         root?.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
-        root?.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(glassRes)
-        root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(glassRes)
+        root?.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(emojiRes)
+        root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
+        
+        // Dynamically update emoji and settings icon colors based on theme
+        val iconColor = if (isDark()) 0xCCFFFFFF.toInt() else 0xFF2A2A2A.toInt()
+        listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
+            root?.findViewById<TextView>(id)?.setTextColor(iconColor)
+        }
+        updateLangIcon(root)
+        
         // Refresh lang pills and keyboard in case theme changed
         keyboardView?.refreshPrefs()
         rebuildLangPills()
@@ -219,16 +229,18 @@ class MyInputMethodService : InputMethodService(),
         // Apply liquid glass to the single candidate_bar container
         val glassRes = if (isDark()) R.drawable.candidate_bar_glass_dark
                        else          R.drawable.candidate_bar_glass_light
+        val emojiRes = if (isDark()) R.drawable.emoji_panel_bg_dark
+                       else          R.drawable.emoji_panel_bg_light
         v.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
-        v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(glassRes)
-        v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(glassRes)
+        v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(emojiRes)
+        v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         // Root keyboard container: transparent — blur comes from window
         v.setBackgroundColor(0x00000000)
         updateLangIcon(v)
         keyboardView        = v.findViewById(R.id.keyboard_view)
         // Theme-aware colors for candidate bar icons
         val dark = isDark()
-        val iconColor = if (dark) 0xCCFFFFFF.toInt() else 0xCC333355.toInt()
+        val iconColor = if (dark) 0xCCFFFFFF.toInt() else 0xFF2A2A2A.toInt()
         listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
             v.findViewById<TextView>(id)?.setTextColor(iconColor)
         }
@@ -548,7 +560,7 @@ class MyInputMethodService : InputMethodService(),
         val abcLabel = when (lang) {
             KeyboardPreferences.LANG_SI -> "සිං"
             KeyboardPreferences.LANG_TA -> "தமி"
-            else -> "ABC"
+            else -> "En"
         }
         bar.addView(actionKey(abcLabel, 1.5f) {
             vibrateKey(); isEmoji = false; setKeyboardLayout()

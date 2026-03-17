@@ -114,7 +114,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="4dp"
-        android:background="@drawable/candidate_bar_glass_dark">
+        android:background="@android:color/transparent">
 
         <!-- Regular keyboard -->
         <com.gihansgamage.aksharakb.MyKeyboardView
@@ -137,7 +137,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@drawable/candidate_bar_glass_dark"
+            android:background="@drawable/emoji_panel_bg_dark"
             android:clipToOutline="true"
             android:visibility="gone">
 

@@ -267,12 +267,11 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     private val previewPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign  = Paint.Align.CENTER
         typeface   = Typeface.create("sans-serif-medium", Typeface.BOLD)
-        color      = 0xFFFFFFFF.toInt()
-        textSize   = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 22f,
+        textSize   = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 28f,
             context.resources.displayMetrics)
     }
     private val previewBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xCC7C3AED.toInt(); style = Paint.Style.FILL
+        style = Paint.Style.FILL
     }
     private val previewRect = RectF()
 
@@ -483,7 +482,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     // Universal shifted label retrieval from XML popupCharacters
                     val popupRaw = key.popupCharacters?.toString()?.trim() ?: ""
                     val popupFirst = popupRaw.split(" ").firstOrNull()?.trim() ?: ""
-                    val sv = popupFirst.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel }
+                    val sv = fixDottedCircle(popupFirst.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel })
                     textPaint.color    = t.textNorm
                     var sz = when {
                         sv.length > 5 -> basePx * 0.46f
@@ -519,30 +518,66 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                             else                -> basePx
                         }
                         textPaint.textSize = sz
+                        val dispLabel = fixDottedCircle(rawLabel)
                         val maxW = (ri - l) * 0.82f
-                        if (textPaint.measureText(rawLabel) > maxW) {
-                            sz *= maxW / textPaint.measureText(rawLabel); textPaint.textSize = sz
+                        if (textPaint.measureText(dispLabel) > maxW) {
+                            sz *= maxW / textPaint.measureText(dispLabel); textPaint.textSize = sz
                         }
                         // Main label always vertically centered
                         val labelY = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
-                        canvas.drawText(rawLabel, kx + kw / 2f, labelY, textPaint)
+                        canvas.drawText(dispLabel, kx + kw / 2f, labelY, textPaint)
                     }
 
                     // Small hint in top-right corner
                     if (hintChar.isNotEmpty()) {
                         hintPaint.color    = if (isDark()) 0xAAFFFFFF.toInt() else 0x88222222.toInt()
                         hintPaint.textSize = basePx * 0.42f
+                        val dispHint = fixDottedCircle(hintChar)
                         val hx = ri - dp(2f)
                         val hy = ky + dp(2f) - hintPaint.ascent()
-                        canvas.drawText(hintChar, hx, hy, hintPaint)
+                        canvas.drawText(dispHint, hx, hy, hintPaint)
                     }
                 }
             }
         }
         // Draw custom key preview overlay
         if (previewLabel.isNotEmpty() && !previewRect.isEmpty) {
-            val r = dp(10f)
+            val r = dp(14f)
+            
+            // Draw drop shadow
+            previewBgPaint.color = t.shadow
+            previewRect.offset(0f, dp(4f))
             canvas.drawRoundRect(previewRect, r, r, previewBgPaint)
+            previewRect.offset(0f, -dp(4f))
+            
+            // Draw base liquid key color wrapper (slightly more opaque to overlay blur)
+            val baseColor = if (isDark()) 0x99404040.toInt() else 0xDDEBEBEB.toInt()
+            previewBgPaint.color = baseColor
+            canvas.drawRoundRect(previewRect, r, r, previewBgPaint)
+            
+            // Draw shine highlight
+            if (t.shineHi != 0) {
+                val shineH = previewRect.height() * 0.45f
+                val shineAlpha = if (isDark()) 0x2AFFFFFF else 0x33FFFFFF
+                previewBgPaint.shader = LinearGradient(
+                    0f, previewRect.top, 0f, previewRect.top + shineH,
+                    intArrayOf(shineAlpha, 0x00FFFFFF), null, Shader.TileMode.CLAMP
+                )
+                previewBgPaint.color = 0xFFFFFFFF.toInt()
+                canvas.drawRoundRect(previewRect, r, r, previewBgPaint)
+                previewBgPaint.shader = null
+            }
+            
+            // Draw rim stroke
+            val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = dp(1f)
+                color = if (isDark()) 0x1AFFFFFF else 0x33FFFFFF
+            }
+            canvas.drawRoundRect(previewRect, r, r, strokePaint)
+            
+            // Draw text
+            previewPaint.color = t.textNorm
             val ty = previewRect.centerY() - (previewPaint.descent() + previewPaint.ascent()) / 2f
             canvas.drawText(previewLabel, previewRect.centerX(), ty, previewPaint)
         }
