@@ -30,12 +30,12 @@
          Normal: ු  අ  ැ  ර  එ  හ  ම  ස  ද  ච
          Shift:  ූ  උ  ෑ  ඍ  ඒ  ඓ  ඖ  ෂ  ධ  ඡ -->
     <Row>
-        <Key android:codes="3540" android:keyLabel="ු" android:popupCharacters="්ර ූ" android:keyEdgeFlags="left"/>
+        <Key android:codes="3540" android:keyLabel="ු" android:popupCharacters="්‍ර ූ" android:keyEdgeFlags="left"/>
         <Key android:codes="3461" android:keyLabel="අ" android:popupCharacters="උ"/>
         <Key android:codes="3536" android:keyLabel="ැ" android:popupCharacters="ෑ"/>
         <Key android:codes="3515" android:keyLabel="ර" android:popupCharacters="ඍ"/>
-        <Key android:codes="3473" android:keyLabel="එ" android:popupCharacters="ඒ"/>
-        <Key android:codes="3524" android:keyLabel="හ" android:popupCharacters="ඓ"/>
+        <Key android:codes="3473" android:keyLabel="එ" android:popupCharacters="ඔ"/>
+        <Key android:codes="3524" android:keyLabel="හ" android:popupCharacters="ශ ඥ"/>
         <Key android:codes="3512" android:keyLabel="ම" android:popupCharacters="ඹ ඖ"/>
         <Key android:codes="3523" android:keyLabel="ස" android:popupCharacters="ෂ"/>
         <Key android:codes="3503" android:keyLabel="ද" android:popupCharacters="ඳ ධ"/>
@@ -51,10 +51,10 @@
         <Key android:codes="3535" android:keyLabel="ා" android:popupCharacters="ෘ"/>
         <Key android:codes="3545" android:keyLabel="ෙ" android:popupCharacters="ෆ"/>
         <Key android:codes="3495" android:keyLabel="ට" android:popupCharacters="ඨ"/>
-        <Key android:codes="3514" android:keyLabel="ය" android:popupCharacters="ළ"/>
+        <Key android:codes="3514" android:keyLabel="ය" android:popupCharacters="්ය"/>
         <Key android:codes="3520" android:keyLabel="ව" android:popupCharacters="ළු"/>
-        <Key android:codes="3505" android:keyLabel="න" android:popupCharacters="ණ"/>
-        <Key android:codes="3482" android:keyLabel="ක" android:popupCharacters="ඛ"/>
+        <Key android:codes="3505" android:keyLabel="න" android:popupCharacters="ළ"/>
+        <Key android:codes="3482" android:keyLabel="ක" android:popupCharacters="ඛ ඤ"/>
         <Key android:codes="3501" android:keyLabel="ත" android:popupCharacters="ථ" android:keyEdgeFlags="right"/>
     </Row>
 

@@ -246,12 +246,6 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         TypedValue.COMPLEX_UNIT_DIP, v, resources.displayMetrics)
 
     // ── NO cached height — let layout shrink naturally when number row removed ──
-    // onMeasure uses default KeyboardView behaviour
-
-
-
-    fun applyBlurEffect() { /* no-op: blur done at window level */ }
-
     // Custom preview popup — drawn manually so ALL characters (incl. \) show correctly.
     // We disable the system preview and draw our own overlay window.
     private var previewPopup: android.widget.PopupWindow? = null
@@ -498,10 +492,16 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                 }
                 else -> {
                     // Show small hint ONLY on specific Sinhala long-press keys
+                    // Or if the key explicitly has 3 (or more) characters defined in popup Raw
                     val hintKeyCodes = setOf(3484, 3490, 3497, 3503, 3540)
                     val popupRaw  = key.popupCharacters?.toString()?.trim() ?: ""
-                    val hintChar  = if (code in hintKeyCodes && popupRaw.isNotEmpty())
-                        popupRaw.split(" ").firstOrNull()?.trim() ?: "" else ""
+                    val popups = popupRaw.split(" ").filter { it.isNotBlank() }
+                    
+                    val hintChar = when {
+                        popups.size >= 2 && !isSpecial(code) && code !in 32..127 -> popups[1] // 3-char logic (base + shift + long-press): the 2nd popup is the long press hint
+                        code in hintKeyCodes && popups.isNotEmpty() -> popups[0]
+                        else -> ""
+                    }
 
                     if (rawLabel.isNotEmpty()) {
                         textPaint.color = t.textNorm

@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Liquid glass panel — dark theme. Matches candidate bar style. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Main glass body -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#55404040"/>
+            <solid android:color="#77333333"/>
             <corners android:radius="22dp"/>
         </shape>
     </item>
-    <!-- Top shine gradient -->
-    <item android:bottom="60dp">
+    <item android:bottom="40dp">
         <shape android:shape="rectangle">
             <gradient
-                android:startColor="#12FFFFFF"
+                android:startColor="#22FFFFFF"
                 android:endColor="#00FFFFFF"
                 android:angle="270"
                 android:type="linear"/>

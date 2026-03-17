@@ -203,14 +203,12 @@ class MyInputMethodService : InputMethodService(),
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         // Re-apply glass background to the single candidate_bar container every time the keyboard appears
-        val root = keyboardView?.parent as? android.view.View
+        val root = keyboardView?.rootView
         val glassRes = if (isDark()) R.drawable.candidate_bar_glass_dark
                        else          R.drawable.candidate_bar_glass_light
         root?.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
-        // Apply matching liquid glass to keyboard panel
-        val kbPanelRes = if (isDark()) R.drawable.keyboard_panel_bg_dark
-                         else          R.drawable.keyboard_panel_bg_light
-        root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(kbPanelRes)
+        root?.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(glassRes)
+        root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         // Refresh lang pills and keyboard in case theme changed
         keyboardView?.refreshPrefs()
         rebuildLangPills()
@@ -222,10 +220,8 @@ class MyInputMethodService : InputMethodService(),
         val glassRes = if (isDark()) R.drawable.candidate_bar_glass_dark
                        else          R.drawable.candidate_bar_glass_light
         v.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
-        // Apply matching liquid glass to keyboard panel
-        val kbPanelRes = if (isDark()) R.drawable.keyboard_panel_bg_dark
-                         else          R.drawable.keyboard_panel_bg_light
-        v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(kbPanelRes)
+        v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(glassRes)
+        v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         // Root keyboard container: transparent — blur comes from window
         v.setBackgroundColor(0x00000000)
         updateLangIcon(v)
@@ -450,10 +446,8 @@ class MyInputMethodService : InputMethodService(),
         val textCol = if (dark) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
         val actionBg = glassColor
 
-        // Apply liquid glass background to panel — matches key style
-        emojiPanel?.setBackgroundColor(0x00000000)  // transparent — keys draw their own glass
-        // Apply glass to tab row
-        tabs.parent?.let { (it as? android.view.View)?.setBackgroundColor(glassColor) }
+        // Emoji panel gracefully inherits candidate_bar_glass theme from onCreate/onStart.
+        // Removed hardcoded background overrides to perfectly match candidate bar.
 
         // ── Category tabs ──────────────────────────────────────────
         tabs.removeAllViews()
@@ -503,12 +497,8 @@ class MyInputMethodService : InputMethodService(),
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     dp(46f).toInt()
                 ).also { it.setMargins(dp(3f).toInt(), dp(2f).toInt(), dp(3f).toInt(), 0) }
-                // Liquid glass row background — alternating subtle tint
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
-                    cornerRadius = dp(10f)
-                    setColor(if (row % 2 == 0) rowBg else 0x00000000)
-                }
+                // Removed alternating row tint so the underlying glass theme shines purely.
+                background = null
             }
             for (col in 0 until cols) {
                 val emoji = emojis.getOrNull(row * cols + col) ?: ""
@@ -535,7 +525,7 @@ class MyInputMethodService : InputMethodService(),
         bar.removeAllViews()
         val dark     = isDark()
         val textCol  = if (dark) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
-        val actionBg = if (dark) 0x88252836.toInt() else 0x99FFFFFF.toInt()
+        val actionBg = if (dark) 0x33FFFFFF else 0x22000000 // subtle translucent buttons
 
         fun actionKey(label: String, weight: Float, onClick: () -> Unit) =
             android.widget.TextView(this).apply {
