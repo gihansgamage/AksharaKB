@@ -5,43 +5,67 @@
     android:orientation="vertical"
     android:background="@android:color/transparent"
     android:paddingTop="6dp">
-    <!-- Candidate bar -->
+    <!-- Candidate bar — 3 liquid-glass pill sections -->
     <LinearLayout
         android:id="@+id/candidate_bar"
         android:layout_width="match_parent"
         android:layout_height="46dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="10dp"
-        android:paddingEnd="6dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         android:layout_marginBottom="4dp"
-        android:background="@drawable/candidate_bar_glass_dark">
+        android:background="@drawable/candidate_bar_glass_dark"
+        android:clipToOutline="true">
 
-        <TextView
-            android:id="@+id/btn_lang_single"
-            android:layout_width="48dp"
-            android:layout_height="36dp"
-            android:text="🌐En"
-            android:textSize="20sp"
-            android:textColor="#CCFFFFFF"
-            android:gravity="center"
-            android:background="@android:color/transparent"/>
+        <!-- Pill 1: Language switch + Emoji -->
+        <LinearLayout
+            android:id="@+id/pill_lang_emoji"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:background="@android:color/transparent">
 
+            <TextView
+                android:id="@+id/btn_lang_single"
+                android:layout_width="52dp"
+                android:layout_height="match_parent"
+                android:text="🌐En"
+                android:textSize="18sp"
+                android:textColor="#CCFFFFFF"
+                android:gravity="center"
+                android:background="@android:color/transparent"/>
+
+            <View
+                android:layout_width="0.5dp"
+                android:layout_height="18dp"
+                android:background="#44FFFFFF"
+                android:layout_marginStart="2dp"
+                android:layout_marginEnd="2dp"/>
+
+            <TextView
+                android:id="@+id/btn_emoji"
+                android:layout_width="44dp"
+                android:layout_height="match_parent"
+                android:text="😊"
+                android:textSize="22sp"
+                android:textColor="#CCFFFFFF"
+                android:gravity="center"
+                android:background="@android:color/transparent"/>
+
+        </LinearLayout>
+
+        <!-- Hidden lang pills container (kept invisible for code compatibility) -->
         <LinearLayout
             android:id="@+id/lang_pills_container"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:visibility="gone"/>
 
-        <View
-            android:layout_width="0.5dp"
-            android:layout_height="18dp"
-            android:background="#33FFFFFF"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"/>
-
+        <!-- Pill 2: Word predictor (flexible, fills remaining space) -->
         <HorizontalScrollView
             android:id="@+id/candidates_view"
             android:layout_width="0dp"
@@ -55,47 +79,42 @@
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"/>
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
         </HorizontalScrollView>
 
-        <View
-            android:layout_width="0.5dp"
-            android:layout_height="18dp"
-            android:background="#33FFFFFF"
-            android:layout_marginStart="2dp"
-            android:layout_marginEnd="2dp"/>
-
-        <TextView
-            android:id="@+id/btn_emoji"
-            android:layout_width="38dp"
-            android:layout_height="46dp"
-            android:text="😊"
-            android:textSize="25sp"
-            android:textColor="#CCFFFFFF"
+        <!-- Pill 3: Settings -->
+        <LinearLayout
+            android:id="@+id/pill_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:background="@android:color/transparent"/>
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:background="@android:color/transparent">
 
-        <View
-            android:layout_width="0.5dp"
-            android:layout_height="18dp"
-            android:background="#33FFFFFF"/>
+            <TextView
+                android:id="@+id/btn_settings"
+                android:layout_width="44dp"
+                android:layout_height="match_parent"
+                android:text="⚙"
+                android:textSize="20sp"
+                android:textColor="#CCFFFFFF"
+                android:gravity="center"
+                android:background="@android:color/transparent"/>
 
-        <TextView
-            android:id="@+id/btn_settings"
-            android:layout_width="38dp"
-            android:layout_height="46dp"
-            android:text="⚙"
-            android:textSize="20sp"
-            android:textColor="#CCFFFFFF"
-            android:gravity="center"
-            android:background="@android:color/transparent"/>
+        </LinearLayout>
 
     </LinearLayout>
 
     <!-- Keyboard + Emoji panel stacked in FrameLayout for same fixed height -->
     <FrameLayout
+        android:id="@+id/keyboard_panel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/keyboard_panel_bg_dark">
 
         <!-- Regular keyboard -->
         <com.gihansgamage.aksharakb.MyKeyboardView

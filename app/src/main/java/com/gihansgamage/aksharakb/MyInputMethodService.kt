@@ -79,7 +79,7 @@ class MyInputMethodService : InputMethodService(),
         3540 to 3542, 3461 to 3467, 3536 to 3537, 3515 to 3469, 3473 to 3474,
         3524 to 3475, 3512 to 3513, 3523 to 3522, 3503 to 3504, 3488 to 3489,
         // Row 2 (simple substitutions — H and J handled specially)
-        3530 to 3535, 3538 to 3539,
+        3530 to 3551, 3538 to 3539,
         // D key: ා(3535) normal, Shift→ෘ(3544) — note ා also on A key
         // Since both A and D emit different codes in XML:
         //   A key codes=3530 (්), D key codes=3535 (ා)
@@ -202,17 +202,15 @@ class MyInputMethodService : InputMethodService(),
     // ── View ──────────────────────────────────────────────────────
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        // Re-apply candidate bar background every time keyboard appears (works in all apps)
-        val v = keyboardView?.parent?.parent as? android.view.View
-        val barView = (keyboardView?.parent as? android.view.View)
-            ?.findViewById<android.view.View>(R.id.candidate_bar)
-        // Re-apply candidate bar glass background
-        (keyboardView?.parent as? android.view.View)
-            ?.findViewById<android.view.View>(R.id.candidate_bar)
-            ?.setBackgroundResource(
-                if (isDark()) R.drawable.candidate_bar_glass_dark
-                else          R.drawable.candidate_bar_glass_light
-            )
+        // Re-apply glass background to the single candidate_bar container every time the keyboard appears
+        val root = keyboardView?.parent as? android.view.View
+        val glassRes = if (isDark()) R.drawable.candidate_bar_glass_dark
+                       else          R.drawable.candidate_bar_glass_light
+        root?.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
+        // Apply matching liquid glass to keyboard panel
+        val kbPanelRes = if (isDark()) R.drawable.keyboard_panel_bg_dark
+                         else          R.drawable.keyboard_panel_bg_light
+        root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(kbPanelRes)
         // Refresh lang pills and keyboard in case theme changed
         keyboardView?.refreshPrefs()
         rebuildLangPills()
@@ -220,12 +218,14 @@ class MyInputMethodService : InputMethodService(),
 
     override fun onCreateInputView(): View {
         val v = LayoutInflater.from(this).inflate(R.layout.keyboard_view, null)
-        // Candidate bar: frosted glass pill, no hard border
-        v.findViewById<android.view.View>(R.id.candidate_bar)
-            ?.setBackgroundResource(
-                if (isDark()) R.drawable.candidate_bar_glass_dark
-                else          R.drawable.candidate_bar_glass_light
-            )
+        // Apply liquid glass to the single candidate_bar container
+        val glassRes = if (isDark()) R.drawable.candidate_bar_glass_dark
+                       else          R.drawable.candidate_bar_glass_light
+        v.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
+        // Apply matching liquid glass to keyboard panel
+        val kbPanelRes = if (isDark()) R.drawable.keyboard_panel_bg_dark
+                         else          R.drawable.keyboard_panel_bg_light
+        v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(kbPanelRes)
         // Root keyboard container: transparent — blur comes from window
         v.setBackgroundColor(0x00000000)
         updateLangIcon(v)

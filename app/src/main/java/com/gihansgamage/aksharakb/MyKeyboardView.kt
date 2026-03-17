@@ -498,7 +498,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                 }
                 else -> {
                     // Show small hint ONLY on specific Sinhala long-press keys
-                    val hintKeyCodes = setOf(3484, 3490, 3497, 3503)
+                    val hintKeyCodes = setOf(3484, 3490, 3497, 3503, 3540)
                     val popupRaw  = key.popupCharacters?.toString()?.trim() ?: ""
                     val hintChar  = if (code in hintKeyCodes && popupRaw.isNotEmpty())
                         popupRaw.split(" ").firstOrNull()?.trim() ?: "" else ""

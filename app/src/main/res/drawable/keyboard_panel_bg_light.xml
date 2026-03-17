@@ -1,7 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Frosted glass pill — light theme. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#DDFFFFFF"/>
-    <corners android:radius="250dp"/>
-</shape>
+<!-- Liquid glass panel — light theme. Matches candidate bar style. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Main glass body -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#66FFFFFF"/>
+            <corners android:radius="22dp"/>
+        </shape>
+    </item>
+    <!-- Top shine gradient -->
+    <item android:bottom="60dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#18FFFFFF"
+                android:endColor="#00FFFFFF"
+                android:angle="270"
+                android:type="linear"/>
+            <corners android:radius="22dp"/>
+        </shape>
+    </item>
+</layer-list>

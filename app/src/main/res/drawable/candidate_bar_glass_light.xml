@@ -4,14 +4,14 @@
     <item android:left="6dp" android:top="4dp" android:right="6dp" android:bottom="-4dp">
         <shape android:shape="rectangle">
             <solid android:color="#18000000"/>
-            <corners android:radius="250dp"/>
+            <corners android:radius="22dp"/>
         </shape>
     </item>
     <!-- Main glass body — semi-transparent white, no border -->
     <item>
         <shape android:shape="rectangle">
             <solid android:color="#66FFFFFF"/>
-            <corners android:radius="250dp"/>
+            <corners android:radius="22dp"/>
         </shape>
     </item>
     <!-- Top shine -->
@@ -22,7 +22,7 @@
                 android:endColor="#00FFFFFF"
                 android:angle="270"
                 android:type="linear"/>
-            <corners android:radius="250dp"/>
+            <corners android:radius="22dp"/>
         </shape>
     </item>
 </layer-list>
