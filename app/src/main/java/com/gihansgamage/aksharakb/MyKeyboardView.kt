@@ -137,8 +137,9 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         }
 
         chars.forEach { ch ->
+            val disp = fixDottedCircle(ch)
             container.addView(android.widget.TextView(context).apply {
-                text      = ch
+                text      = disp
                 textSize  = 22f
                 gravity   = android.view.Gravity.CENTER
                 setTextColor(txtColor)
@@ -198,12 +199,20 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                 } ?: run { hideCustomPreview(); return }
                 val code = key.codes?.firstOrNull() ?: 0
                 if (code <= 0) { hideCustomPreview(); return }
-                // Always use code.toChar() for reliable preview
-                // key.label can be empty for \ due to XML escape handling
+                // Correct dynamic preview label resolution considering Shift
+                val rawLabel = key.label?.toString()?.trim() ?: if (code > 31) code.toChar().toString() else ""
                 val lbl = when {
                     code == 92 -> "\\"
-                    code > 31  -> code.toChar().toString()
-                    else       -> key.label?.toString()?.trim() ?: ""
+                    code > 31 -> {
+                        if (kb.isShifted) {
+                            val popupStr = key.popupCharacters?.toString()?.trim() ?: ""
+                            val shiftChar = popupStr.split(" ").firstOrNull() ?: ""
+                            shiftChar.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel }
+                        } else {
+                            rawLabel
+                        }
+                    }
+                    else -> rawLabel
                 }
                 if (lbl.isNotEmpty()) showCustomPreview(key, lbl)
                 else hideCustomPreview()
@@ -221,7 +230,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         // Position preview fully ABOVE the key with a gap
         val cy     = keyY - size - dp(4f)
         previewRect.set(cx - size / 2f, cy, cx + size / 2f, cy + size)
-        previewLabel = label
+        previewLabel = fixDottedCircle(label)
         invalidate(
             (previewRect.left  - dp(4f)).toInt(),
             (previewRect.top   - dp(4f)).toInt(),
@@ -238,6 +247,12 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     }
 
     private var previewLabel = ""
+    
+    private fun fixDottedCircle(text: String): String {
+        if (text.isEmpty()) return text
+        // If it starts with a Sinhala combining mark (0x0DCA..0x0DF3), prepend Zero Width Joiner
+        return if (text[0].code in 3530..3571) "\u200D" + text else text
+    }
 
     fun setKeyboardImage(b: Bitmap?) { keyboardBg = b; invalidate() }
     fun refreshPrefs() { prefs = KeyboardPreferences(context); invalidate() }
@@ -465,18 +480,10 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     }
                 }
                 shifted -> {
-                    // Shifted label: use shiftMap for Sinhala/special codes (>127),
-                    // use popupCharacters only for Latin keys (codes 32-127)
-                    val sv = when {
-                        code > 127 && shiftMap.containsKey(code) ->
-                            shiftMap[code]!!.toChar().toString()
-                        code in 32..127 -> {
-                            val popupRaw = key.popupCharacters?.toString()?.trim() ?: ""
-                            val popupFirst = popupRaw.split(" ").firstOrNull()?.trim() ?: ""
-                            popupFirst.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel }
-                        }
-                        else -> shiftedLabel(rawLabel).ifEmpty { rawLabel }
-                    }
+                    // Universal shifted label retrieval from XML popupCharacters
+                    val popupRaw = key.popupCharacters?.toString()?.trim() ?: ""
+                    val popupFirst = popupRaw.split(" ").firstOrNull()?.trim() ?: ""
+                    val sv = popupFirst.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel }
                     textPaint.color    = t.textNorm
                     var sz = when {
                         sv.length > 5 -> basePx * 0.46f

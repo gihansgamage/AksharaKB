@@ -208,7 +208,7 @@ class MyInputMethodService : InputMethodService(),
                        else          R.drawable.candidate_bar_glass_light
         root?.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
         root?.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(glassRes)
-        root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
+        root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(glassRes)
         // Refresh lang pills and keyboard in case theme changed
         keyboardView?.refreshPrefs()
         rebuildLangPills()
@@ -221,7 +221,7 @@ class MyInputMethodService : InputMethodService(),
                        else          R.drawable.candidate_bar_glass_light
         v.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
         v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(glassRes)
-        v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
+        v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(glassRes)
         // Root keyboard container: transparent — blur comes from window
         v.setBackgroundColor(0x00000000)
         updateLangIcon(v)
@@ -633,34 +633,27 @@ class MyInputMethodService : InputMethodService(),
 
     private fun commitWijesekara(code: Int, ic: android.view.inputmethod.InputConnection) {
         val shifted = capsState != CapsState.NONE
-
-        // ZWJ compound: if awaiting ZWJ, prefix ZWJ before next char
-        if (awaitingZWJ && code != 3530 /* ් */) {
-            val out = if (shifted) wijShiftMap.getOrDefault(code, code) else code
-            ic.commitText("$ZWJ${out.toChar()}", 1)
-            currentInput.append("$ZWJ${out.toChar()}")
-            awaitingZWJ = false; afterWij(shifted); return
-        }
-
-        // Special shifted multi-char outputs
+        
+        // Resolve shifted character dynamically from keyboard XML popupCharacters
+        var outStr = code.toChar().toString()
         if (shifted) {
-            when (code) {
-                NORMAL_YA -> { // H key Shift → ්‍ය
-                    ic.commitText("${3530.toChar()}$ZWJ${3514.toChar()}", 1)
-                    currentInput.append("${3530.toChar()}$ZWJ${3514.toChar()}")
-                    afterWij(true); return
-                }
-                NORMAL_WA -> { // J key Shift → ළු
-                    ic.commitText("${3525.toChar()}${3540.toChar()}", 1)
-                    currentInput.append("${3525.toChar()}${3540.toChar()}")
-                    afterWij(true); return
-                }
+            val key = keyboardView?.keyboard?.keys?.find { it.codes?.firstOrNull() == code }
+            val popStr = key?.popupCharacters?.toString()?.trim() ?: ""
+            val firstPop = popStr.split(" ").firstOrNull() ?: ""
+            if (firstPop.isNotEmpty()) {
+                outStr = firstPop
             }
         }
 
-        val out = if (shifted) wijShiftMap.getOrDefault(code, code) else code
-        ic.commitText(out.toChar().toString(), 1)
-        currentInput.append(out.toChar())
+        // ZWJ compound: if awaiting ZWJ, prefix ZWJ before next char
+        if (awaitingZWJ && code != 3530 /* ් */) {
+            ic.commitText("$ZWJ$outStr", 1)
+            currentInput.append("$ZWJ$outStr")
+            awaitingZWJ = false; afterWij(shifted); return
+        }
+
+        ic.commitText(outStr, 1)
+        currentInput.append(outStr)
         updateCandidates(currentInput.toString())
         afterWij(shifted)
     }
