@@ -3,9 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@android:color/transparent">
+    android:background="@android:color/transparent"
+    android:paddingTop="6dp">
 
-    <!-- Candidate bar — floating pill -->
+    <!-- Candidate bar -->
     <LinearLayout
         android:id="@+id/candidate_bar"
         android:layout_width="match_parent"
@@ -16,29 +17,25 @@
         android:paddingEnd="6dp"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
-        android:layout_marginTop="6dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/candidate_bar_glass_dark">
 
-        <!-- Single language switch -->
         <TextView
             android:id="@+id/btn_lang_single"
-            android:layout_width="36dp"
+            android:layout_width="48dp"
             android:layout_height="36dp"
-            android:text="&#9000;"
-            android:textSize="15sp"
+            android:text="🌐En"
+            android:textSize="9sp"
             android:textColor="#CCFFFFFF"
             android:gravity="center"
             android:background="@android:color/transparent"/>
 
-        <!-- Language pills container — hidden, kept for IME compat -->
         <LinearLayout
             android:id="@+id/lang_pills_container"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:visibility="gone"/>
 
-        <!-- Divider -->
         <View
             android:layout_width="0.5dp"
             android:layout_height="18dp"
@@ -46,7 +43,6 @@
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"/>
 
-        <!-- Word predictions -->
         <HorizontalScrollView
             android:id="@+id/candidates_view"
             android:layout_width="0dp"
@@ -63,7 +59,6 @@
                 android:gravity="center_vertical"/>
         </HorizontalScrollView>
 
-        <!-- Divider -->
         <View
             android:layout_width="0.5dp"
             android:layout_height="18dp"
@@ -71,29 +66,26 @@
             android:layout_marginStart="2dp"
             android:layout_marginEnd="2dp"/>
 
-        <!-- Emoji ☺ -->
         <TextView
             android:id="@+id/btn_emoji"
             android:layout_width="38dp"
             android:layout_height="46dp"
-            android:text="&#9786;"
+            android:text="😊"
             android:textSize="17sp"
             android:textColor="#CCFFFFFF"
             android:gravity="center"
             android:background="@android:color/transparent"/>
 
-        <!-- Divider -->
         <View
             android:layout_width="0.5dp"
             android:layout_height="18dp"
             android:background="#33FFFFFF"/>
 
-        <!-- Settings ⚙ -->
         <TextView
             android:id="@+id/btn_settings"
             android:layout_width="38dp"
             android:layout_height="46dp"
-            android:text="&#9881;"
+            android:text="⚙"
             android:textSize="17sp"
             android:textColor="#CCFFFFFF"
             android:gravity="center"
@@ -101,17 +93,68 @@
 
     </LinearLayout>
 
-    <!-- Keyboard -->
-    <com.gihansgamage.aksharakb.MyKeyboardView
-        android:id="@+id/keyboard_view"
+    <!-- Keyboard + Emoji panel stacked in FrameLayout for same fixed height -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:keyPreviewLayout="@layout/key_preview"
-        android:keyTextColor="#00000000"
-        android:keyBackground="@android:color/transparent"
-        android:shadowColor="#00000000"
-        android:shadowRadius="0"
-        android:paddingBottom="8dp"/>
+        android:layout_height="wrap_content">
+
+        <!-- Regular keyboard -->
+        <com.gihansgamage.aksharakb.MyKeyboardView
+            android:id="@+id/keyboard_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:keyPreviewLayout="@layout/key_preview"
+            android:keyTextColor="#00000000"
+            android:keyBackground="@android:color/transparent"
+            android:shadowColor="#00000000"
+            android:shadowRadius="0"
+            android:paddingBottom="8dp"/>
+
+        <!-- Emoji panel — same height as keyboard, hidden by default -->
+        <LinearLayout
+            android:id="@+id/emoji_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@android:color/transparent"
+            android:visibility="gone">
+
+            <!-- Category tabs row -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:scrollbars="none"
+                android:overScrollMode="never"
+                android:background="#22000000">
+                <LinearLayout
+                    android:id="@+id/emoji_tabs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"/>
+            </HorizontalScrollView>
+
+            <!-- Scrollable emoji grid -->
+            <ScrollView
+                android:id="@+id/emoji_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="none"
+                android:overScrollMode="never"
+                android:background="@android:color/transparent">
+                <LinearLayout
+                    android:id="@+id/emoji_grid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+            </ScrollView>
+
+        </LinearLayout>
+
+    </FrameLayout>
 
 </LinearLayout>

@@ -26,6 +26,11 @@ class MyInputMethodService : InputMethodService(),
     private var candidatesContainer: LinearLayout? = null
     private var candidatesScroll: HorizontalScrollView? = null
     private var langPillsContainer: LinearLayout? = null
+    private var emojiPanel: android.view.ViewGroup? = null
+    private var emojiTabs: LinearLayout? = null
+    private var emojiGrid: android.widget.LinearLayout? = null
+    private var emojiScrollView: android.widget.ScrollView? = null
+    private var activeCategoryIndex = 0
     private var btnSettings: TextView? = null
     private var wordPredictor: WordPredictor? = null
     private var clipboard: KeyboardClipboard? = null
@@ -45,8 +50,7 @@ class MyInputMethodService : InputMethodService(),
     private var currentInput   = StringBuilder()
     private var awaitingZWJ    = false
     private var lastTappedEmoji = ""
-    private val emojiGrid = mutableListOf<String>()  // current page emoji labels in order
-    private var emojiTapSlot = 0  // which slot was last tapped (0-29)
+    private var lastPressedEmoji = ""  // emoji captured in onPress
 
     // ── Wijesekara shift map ──────────────────────────────────────
     // Exact values from spec, verified with python3 ord()
@@ -218,6 +222,7 @@ class MyInputMethodService : InputMethodService(),
             )
         // Root keyboard container: transparent — blur comes from window
         v.setBackgroundColor(0x00000000)
+        updateLangIcon(v)
         keyboardView        = v.findViewById(R.id.keyboard_view)
         // Theme-aware colors for candidate bar icons
         val dark = isDark()
@@ -225,11 +230,17 @@ class MyInputMethodService : InputMethodService(),
         listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
             v.findViewById<TextView>(id)?.setTextColor(iconColor)
         }
+        v.findViewById<TextView>(R.id.btn_emoji)?.text    = "😊"
+        v.findViewById<TextView>(R.id.btn_settings)?.text = "⚙"
         updateLangIcon(v)
 
         candidatesContainer = v.findViewById(R.id.candidates_container)
         candidatesScroll    = v.findViewById(R.id.candidates_view)
         langPillsContainer  = v.findViewById(R.id.lang_pills_container)
+        emojiPanel          = v.findViewById(R.id.emoji_panel)
+        emojiTabs           = v.findViewById(R.id.emoji_tabs)
+        emojiGrid           = v.findViewById(R.id.emoji_grid)
+        emojiScrollView     = v.findViewById(R.id.emoji_scroll)
 
         // Single language switch icon — tap to cycle languages
         v.findViewById<TextView>(R.id.btn_lang_single)?.setOnClickListener {
@@ -241,11 +252,6 @@ class MyInputMethodService : InputMethodService(),
             phoneticBuffer.clear(); currentInput.clear()
             setKeyboardLayout(); updateLangIcon(v); updateCandidates("")
         }
-
-        // Set icon text in code — XML unicode attrs can render incorrectly on some fonts
-        // Set stable icon labels once — never touched again
-        v.findViewById<TextView>(R.id.btn_emoji)?.text    = "☺"   // ☺ U+263A
-        v.findViewById<TextView>(R.id.btn_settings)?.text = "⚙"   // ⚙ U+2699
 
         // Emoji button
         v.findViewById<TextView>(R.id.btn_emoji)?.setOnClickListener {
@@ -276,13 +282,7 @@ class MyInputMethodService : InputMethodService(),
         // Emoji swipe: left = next page, right = prev page
         keyboardView?.onEmojiSwipe = { direction ->
             val maxPage = ((emojiCategories[emojiCategory].second.size - 1) / 30)
-            emojiPage = when {
-                direction > 0 -> if (emojiPage < maxPage) emojiPage + 1 else 0
-                else          -> if (emojiPage > 0) emojiPage - 1 else maxPage
-            }
-            emojiTapSlot = 0
-            populateEmojiKeys()
-            keyboardView?.invalidateAllKeys()
+            buildEmojiPanel(activeCategoryIndex)
         }
         applyCurrentPrefs()
         rebuildLangPills()
@@ -346,19 +346,18 @@ class MyInputMethodService : InputMethodService(),
 
     private fun updateKbModeButton() { /* btn_kb_mode removed from layout */ }
 
-    // Update the single language switch icon label
     private fun updateLangIcon(rootView: android.view.View? = null) {
-        val lang  = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
         val label = when (lang) {
-            KeyboardPreferences.LANG_SI -> "සිං"   // සිං
-            KeyboardPreferences.LANG_TA -> "தமி"   // தமி
-            else                        -> "En"
+            KeyboardPreferences.LANG_SI -> "🌐සි"
+            KeyboardPreferences.LANG_TA -> "🌐தம்"
+            else                        -> "🌐En"
         }
         val dark = isDark()
         val col  = if (dark) 0xCCFFFFFF.toInt() else 0xCC1A1A2E.toInt()
         val root = rootView ?: (keyboardView?.parent as? android.view.View)
         root?.findViewById<TextView>(R.id.btn_lang_single)?.apply {
-            text = label; textSize = 12f; setTextColor(col)
+            text = label; textSize = 9f; setTextColor(col)
         }
     }
 
@@ -367,7 +366,7 @@ class MyInputMethodService : InputMethodService(),
 
     private fun applyCurrentPrefs() {
         val p = prefs ?: return; val kv = keyboardView ?: return
-        kv.isPreviewEnabled = p.showPopupKeys
+        kv.isPreviewEnabled = false  // always use custom preview drawn in MyKeyboardView
         kv.refreshPrefs(); setKeyboardLayout()
     }
 
@@ -379,6 +378,7 @@ class MyInputMethodService : InputMethodService(),
         val numPad = p.showNumberPad
         val xmlId = when {
             isEmoji   -> R.xml.emoji_keyboard
+            isSymbols && capsState != CapsState.NONE -> R.xml.symbols_shift
             isSymbols -> R.xml.symbols
             lang == KeyboardPreferences.LANG_SI -> when {
                 phonetic && numPad  -> R.xml.sinhala_phonetic
@@ -400,44 +400,93 @@ class MyInputMethodService : InputMethodService(),
 
         // For emoji keyboard: populate emoji labels into the keyboard keys
         if (isEmoji) {
-            populateEmojiKeys()
-            keyboardView?.isEmojiMode   = true
-            keyboardView?.activeCategoryTab = emojiCategory
+            keyboardView?.visibility = android.view.View.INVISIBLE
+            emojiPanel?.visibility   = android.view.View.VISIBLE
+            keyboardView?.isEmojiMode = false
+            // Set emoji panel height = keyboard height so it never overflows
+            val kbHeight = keyboardView?.measuredHeight ?: 0
+            if (kbHeight > 0) {
+                emojiPanel?.layoutParams = (emojiPanel?.layoutParams
+                        as? android.view.ViewGroup.LayoutParams)?.also {
+                    it.height = kbHeight
+                } ?: android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT, kbHeight)
+            }
+            buildEmojiPanel(emojiCategory)
         } else {
-            keyboardView?.isEmojiMode   = false
+            keyboardView?.visibility = android.view.View.VISIBLE
+            emojiPanel?.visibility   = android.view.View.GONE
+            keyboardView?.isEmojiMode = false
         }
         keyboardView?.invalidateAllKeys()
         updateKbModeButton()
     }
 
-    // Populate emoji keyboard keys with current category + page
-    private fun populateEmojiKeys() {
-        val kb = keyboard ?: return
-        val emojis = emojiCategories[emojiCategory].second
-        val perPage = 30
-        val startIdx = emojiPage * perPage
-        val pageEmojis = emojis.drop(startIdx).take(perPage)
+    private fun buildEmojiPanel(catIndex: Int) {
+        activeCategoryIndex = catIndex.coerceIn(0, emojiCategories.lastIndex)
+        val tabs   = emojiTabs ?: return
+        val grid   = emojiGrid  ?: return
+        val scroll = emojiScrollView ?: return
 
-        // Keys: index 8 onward (after 8 category tab keys) are emoji slots
-        // Then last row (bottom nav) — skip those
-        // Layout: row0=8 tabs, row1=10 emojis, row2=10 emojis, row3=10 emojis, row4=5 nav
-        val keys = kb.keys ?: return
-        // Category tab keys: indices 0-7 (codes -51 to -58)
-        // Emoji keys: indices 8-37 (30 keys, codes -60)
-        // Nav keys: indices 38-42
+        // ── Category tabs ──────────────────────────────────────────
+        tabs.removeAllViews()
+        emojiCategories.forEachIndexed { idx, (name, _) ->
+            val icon = name.split(" ").firstOrNull() ?: "?"
+            tabs.addView(android.widget.TextView(this).apply {
+                text      = icon
+                textSize  = 20f
+                gravity   = android.view.Gravity.CENTER
+                setPadding(dp(10f).toInt(), 0, dp(10f).toInt(), 0)
+                alpha     = if (idx == activeCategoryIndex) 1f else 0.4f
+                layoutParams = LinearLayout.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                setOnClickListener {
+                    buildEmojiPanel(idx)
+                    scroll.smoothScrollTo(0, 0)
+                }
+            })
+        }
 
-        emojiGrid.clear()
-        var emojiIdx = 0
-        for (key in keys) {
-            val code = key.codes.firstOrNull() ?: 0
-            if (code == -70) {
-                val emoji = pageEmojis.getOrNull(emojiIdx) ?: ""
-                key.label = emoji
-                if (emoji.isNotBlank()) emojiGrid.add(emoji)
-                emojiIdx++
+        // ── Emoji grid — rows of 8 ─────────────────────────────────
+        grid.removeAllViews()
+        val emojis = emojiCategories[activeCategoryIndex].second
+        val cols = 8
+        val rowCount = (emojis.size + cols - 1) / cols
+        val dark = isDark()
+        val textCol = if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+
+        for (row in 0 until rowCount) {
+            val rowLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
             }
+            for (col in 0 until cols) {
+                val idx = row * cols + col
+                val emoji = emojis.getOrNull(idx) ?: ""
+                rowLayout.addView(android.widget.TextView(this).apply {
+                    text      = emoji
+                    textSize  = 26f
+                    gravity   = android.view.Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        0, dp(48f).toInt(), 1f
+                    )
+                    if (emoji.isNotBlank()) setOnClickListener {
+                        vibrateKey()
+                        currentInputConnection?.commitText(emoji, 1)
+                    }
+                })
+            }
+            grid.addView(rowLayout)
         }
     }
+
+    // Legacy stub — no longer used
+    private fun populateEmojiKeys() {}
 
     // ── Key handling ──────────────────────────────────────────────
     override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
@@ -456,11 +505,10 @@ class MyInputMethodService : InputMethodService(),
             }
             // -61/-62 arrow keys removed — swipe to page instead
             -70 -> {
-                // Emoji key tapped. All -60 keys share the same code so we use
-                // emojiTapSlot to track which one. emojiGrid holds current page emojis in order.
-                val emoji = emojiGrid.getOrNull(emojiTapSlot) ?: ""
+                // Emoji panel handles taps directly via onClick — this code path unused
+                val emoji = lastPressedEmoji
                 if (emoji.isNotBlank()) ic.commitText(emoji, 1)
-                emojiTapSlot = (emojiTapSlot + 1) % maxOf(emojiGrid.size, 1)
+                lastPressedEmoji = ""
             }
 
             // ── Exit emoji keyboard when ?123 or ABC is pressed ───
@@ -480,13 +528,20 @@ class MyInputMethodService : InputMethodService(),
                 updateCandidates(currentInput.toString())
             }
             Keyboard.KEYCODE_SHIFT -> {
-                capsState = when (capsState) {
-                    CapsState.NONE      -> CapsState.SHIFT
-                    CapsState.SHIFT     -> CapsState.CAPS_LOCK
-                    CapsState.CAPS_LOCK -> CapsState.NONE
+                if (isSymbols) {
+                    // Symbols: simple toggle NONE↔SHIFT only (no CAPS_LOCK)
+                    capsState = if (capsState == CapsState.NONE) CapsState.SHIFT else CapsState.NONE
+                    // Post layout change to avoid reentrancy during onKey dispatch
+                    keyboardView?.post { setKeyboardLayout() }
+                } else {
+                    capsState = when (capsState) {
+                        CapsState.NONE      -> CapsState.SHIFT
+                        CapsState.SHIFT     -> CapsState.CAPS_LOCK
+                        CapsState.CAPS_LOCK -> CapsState.NONE
+                    }
+                    keyboard?.isShifted = (capsState != CapsState.NONE)
+                    keyboardView?.invalidateAllKeys()
                 }
-                keyboard?.isShifted = (capsState != CapsState.NONE)
-                keyboardView?.invalidateAllKeys()
             }
             // KEYCODE_MODE_CHANGE handled above in emoji section
             Keyboard.KEYCODE_DONE -> {
@@ -582,12 +637,15 @@ class MyInputMethodService : InputMethodService(),
         currentInput.append(ch)
         updateCandidates(currentInput.toString())
 
-        // After typing one letter in SHIFT mode → reset to NONE
-        if (capsState == CapsState.SHIFT && ch.isLetter()) {
+        // After typing one character in SHIFT mode:
+        // - Non-symbols: reset shift after one letter
+        // - Symbols: keep shift so user can type multiple shifted symbols
+        if (capsState == CapsState.SHIFT && !isSymbols) {
             capsState = CapsState.NONE
             keyboard?.isShifted = false
             keyboardView?.invalidateAllKeys()
         }
+        // In symbols+shift mode: no reset — user taps shift again to exit
 
         // English auto-caps: after sentence-ending punctuation + space,
         // automatically activate SHIFT so next letter starts capitalized
@@ -616,15 +674,18 @@ class MyInputMethodService : InputMethodService(),
         }
     }
 
-    // Check if English keyboard should auto-cap (e.g. after field focus or sentence end)
+    // Auto-cap English: fires on field open and after sentence punctuation.
+    // Sets SHIFT (auto-off after 1 letter) — not CAPS_LOCK.
     private fun checkAutoCapEnglish() {
         val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
         if (lang != KeyboardPreferences.LANG_EN || isSymbols || isEmoji) return
         if (capsState != CapsState.NONE) return  // already shifted
         val ic = currentInputConnection ?: return
-        val before = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
-        if (before.isEmpty()) {
-            // Start of field — auto cap
+        val before = ic.getTextBeforeCursor(3, 0)?.toString() ?: ""
+        val shouldCap = before.isEmpty() ||
+                before.endsWith(". ") || before.endsWith("? ") || before.endsWith("! ") ||
+                before.endsWith("\n")
+        if (shouldCap) {
             capsState = CapsState.SHIFT
             keyboard?.isShifted = true
             keyboardView?.invalidateAllKeys()
@@ -749,20 +810,15 @@ class MyInputMethodService : InputMethodService(),
 
     override fun swipeLeft()  { vibrateKey(); val en = prefs?.enabledLanguages ?: return; if (en.size <= 1) return; val c = prefs?.currentLanguage ?: en[0]; prefs?.currentLanguage = en[(en.indexOf(c)+1)%en.size]; isSymbols=false; capsState=CapsState.NONE; awaitingZWJ=false; phoneticBuffer.clear(); currentInput.clear(); setKeyboardLayout(); rebuildLangPills(); updateCandidates("") }
     override fun swipeRight() { swipeLeft() }
-    override fun onPress(p: Int) {
-        if (p == -60 && isEmoji) {
-            // Find the pressed emoji key by scanning keys under touch
-            // We rely on the fact that onPress fires with code of the pressed key
-            // Use a workaround: scan keyboard keys and find first non-blank -60 key
-            // that hasn't been used yet — this works when tapping sequentially
-            // Better: the keyboard view calls onPress then onKey; we find the key
-            // by using the Keyboard object directly
+    override fun onPress(primaryCode: Int) {
+        if (primaryCode == -70 && isEmoji) {
             val kb = keyboard ?: return
-            val keys = kb.keys ?: return
-            // Find all -60 keys with non-blank labels
-            val emojiKeys = keys.filter { it.codes.firstOrNull() == -60 && it.label?.isNotBlank() == true }
-            // We store ALL emojis in order, touch position gives us index
-            // Simple approach: we'll set lastTappedEmoji in the custom onKey via keyCodes array
+            val kv = keyboardView ?: return
+            val key = kb.keys?.firstOrNull { k ->
+                kv.lastTouchX >= k.x.toFloat() && kv.lastTouchX < (k.x + k.width).toFloat() &&
+                        kv.lastTouchY >= k.y.toFloat() && kv.lastTouchY < (k.y + k.height).toFloat()
+            }
+            lastPressedEmoji = key?.label?.toString()?.trim() ?: ""
         }
     }
     override fun onRelease(p: Int) {}

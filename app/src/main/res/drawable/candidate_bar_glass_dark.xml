@@ -1,21 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Candidate bar — DARK theme.
+  Matches key liquid glass style: same opacity (53%), same color family,
+  top shine, faint border. 250dp radius = full pill.
+-->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Frosted glass body -->
-    <item>
+
+    <!-- Drop shadow -->
+    <item android:left="2dp" android:top="3dp" android:right="2dp" android:bottom="-3dp">
         <shape android:shape="rectangle">
-            <solid android:color="#CC1E2030"/>
+            <solid android:color="#44000000"/>
             <corners android:radius="250dp"/>
         </shape>
     </item>
-    <!-- Top shine — covers top 23dp of the 46dp bar -->
+
+    <!-- Glass body — matches key opacity 53% (#88) -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#88252836"/>
+            <corners android:radius="250dp"/>
+        </shape>
+    </item>
+
+    <!-- Top shine — same subtle highlight as keys -->
     <item android:bottom="23dp">
         <shape android:shape="rectangle">
             <gradient
-                android:startColor="#0EFFFFFF"
+                android:startColor="#0CFFFFFF"
                 android:endColor="#00FFFFFF"
                 android:angle="270"
                 android:type="linear"/>
             <corners android:radius="250dp"/>
         </shape>
     </item>
+
+    <!-- Rim border — faint white edge -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000"/>
+            <stroke android:width="0.7dp" android:color="#28FFFFFF"/>
+            <corners android:radius="250dp"/>
+        </shape>
+    </item>
+
 </layer-list>

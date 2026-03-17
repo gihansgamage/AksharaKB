@@ -18,6 +18,8 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     var isEmojiMode: Boolean = false
     var activeCategoryTab: Int = 0
     var onEmojiSwipe: ((direction: Int) -> Unit)? = null
+    var lastTouchX: Float = 0f
+    var lastTouchY: Float = 0f
 
     private val keyBodyPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val keyBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
@@ -60,9 +62,66 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         })
 
     override fun onTouchEvent(me: MotionEvent): Boolean {
+        lastTouchX = me.x
+        lastTouchY = me.y
         if (isEmojiMode) gestureDetector.onTouchEvent(me)
+        handleCustomPreview(me)
         return super.onTouchEvent(me)
     }
+
+    private fun handleCustomPreview(me: MotionEvent) {
+        if (!prefs.showPopupKeys) return
+        val kb = keyboard ?: return
+        when (me.action) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                val key = kb.keys?.firstOrNull { k ->
+                    me.x >= k.x && me.x < k.x + k.width &&
+                            me.y >= k.y && me.y < k.y + k.height
+                } ?: run { hideCustomPreview(); return }
+                val code = key.codes?.firstOrNull() ?: 0
+                if (code <= 0) { hideCustomPreview(); return }
+                // Always use code.toChar() for reliable preview
+                // key.label can be empty for \ due to XML escape handling
+                val lbl = when {
+                    code == 92 -> "\\"
+                    code > 31  -> code.toChar().toString()
+                    else       -> key.label?.toString()?.trim() ?: ""
+                }
+                if (lbl.isNotEmpty()) showCustomPreview(key, lbl)
+                else hideCustomPreview()
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> hideCustomPreview()
+        }
+    }
+
+    private fun showCustomPreview(key: Keyboard.Key, label: String) {
+        val keyX   = key.x.toFloat()
+        val keyY   = key.y.toFloat()
+        val keyW   = key.width.toFloat()
+        val keyH   = key.height.toFloat()
+        val size   = dp(48f)
+        val cx     = keyX + keyW / 2f
+        val cy     = keyY - size * 0.3f
+        val r      = dp(10f)
+        // Draw preview as an overlay by posting an invalidate with preview state
+        previewRect.set(cx - size / 2f, cy - size / 2f, cx + size / 2f, cy + size / 2f)
+        previewLabel = label
+        invalidate(
+            (previewRect.left - dp(4f)).toInt(),
+            (previewRect.top  - dp(4f)).toInt(),
+            (previewRect.right + dp(4f)).toInt(),
+            (previewRect.bottom + dp(4f)).toInt()
+        )
+    }
+
+    private fun hideCustomPreview() {
+        if (previewLabel.isNotEmpty()) {
+            previewLabel = ""
+            invalidate()
+        }
+    }
+
+    private var previewLabel = ""
 
     fun setKeyboardImage(b: Bitmap?) { keyboardBg = b; invalidate() }
     fun refreshPrefs() { prefs = KeyboardPreferences(context); invalidate() }
@@ -70,19 +129,40 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     private fun dp(v: Float) = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, v, resources.displayMetrics)
 
-    // ── NO cached height — let layout shrink naturally when number row removed ──
-    // onMeasure uses default KeyboardView behaviour
+    // Static height — cache the largest measured height so all keyboard variants
+    // (with/without number row, emoji panel) maintain the same height.
+    private var cachedHeight = 0
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        val h = measuredHeight
+        if (h > cachedHeight) cachedHeight = h
+        if (cachedHeight > 0) setMeasuredDimension(measuredWidth, cachedHeight)
+    }
+
+
+
+    fun applyBlurEffect() { /* no-op: blur done at window level */ }
+
+    // Custom preview popup — drawn manually so ALL characters (incl. \) show correctly.
+    // We disable the system preview and draw our own overlay window.
+    private var previewPopup: android.widget.PopupWindow? = null
+    private val previewPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign  = Paint.Align.CENTER
+        typeface   = Typeface.create("sans-serif-medium", Typeface.BOLD)
+        color      = 0xFFFFFFFF.toInt()
+        textSize   = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 22f,
+            context.resources.displayMetrics)
+    }
+    private val previewBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xCC7C3AED.toInt(); style = Paint.Style.FILL
+    }
+    private val previewRect = RectF()
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         setLayerType(LAYER_TYPE_HARDWARE, null)
-        // Blur is applied at window level via window.setBackgroundBlurRadius()
-        // called from MyInputMethodService.onWindowShown() — that blurs the
-        // window background (what shows through transparent regions) without
-        // touching the drawn key content.
+        isPreviewEnabled = false   // disable system preview — we draw our own
     }
-
-    fun applyBlurEffect() { /* no-op: blur done at window level */ }
 
 
     // ── Theme ─────────────────────────────────────────────────────
@@ -110,9 +190,9 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
 
     private fun buildTheme() = if (isDark()) T(
         // ── DARK — deep charcoal keys on transparent background ───
-        key          = 0xCC252836.toInt(),   // 80% opacity dark blue-grey
-        keySpec      = 0xCC1E2030.toInt(),   // 80% opacity special
-        keyActive    = 0xDD3A4880.toInt(),   // 87% opacity active shift
+        key          = 0x88252836.toInt(),   // 53% opacity dark blue-grey
+        keySpec      = 0x881E2030.toInt(),   // 53% opacity special
+        keyActive    = 0xAA3A4880.toInt(),   // 67% opacity active shift
         // Border: single faint white rim
         border       = 0x28FFFFFF,
         borderActive = 0xCC8899EE.toInt(),
@@ -126,9 +206,9 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         isLight      = false
     ) else T(
         // ── LIGHT — white keys on transparent background ──────────
-        key          = 0xD8FFFFFF.toInt(),   // 85% opacity white
-        keySpec      = 0xD8F0F2F9.toInt(),   // 85% opacity off-white
-        keyActive    = 0xDDD0DAFF.toInt(),   // 87% opacity active shift
+        key          = 0x99FFFFFF.toInt(),   // 60% opacity white
+        keySpec      = 0x99F0F2F9.toInt(),   // 60% opacity off-white
+        keyActive    = 0xAAD0DAFF.toInt(),   // 67% opacity active shift
         border       = 0x00000000,           // no border — shadow only
         borderActive = 0x554466BB,
         shadow       = 0x30000044.toInt(),
@@ -159,22 +239,8 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
         val H       = height.toFloat()
 
         // ── Background: faded-in frosted tint ────────────────────
-        // Soft top fade — transparent → slightly tinted over top 20dp.
-        // This feathers the hard window-blur edge into a smooth transition,
-        // matching the iOS-style blurred keyboard appearance.
-        // No solid background is drawn — the window blur shows through.
-        if (H > 0) {
-            val fadeH    = dp(20f).coerceAtMost(H * 0.18f)
-            val bgColor  = if (isDark()) 0x00000000 else 0x00FFFFFF
-            val midColor = if (isDark()) 0x18000000 else 0x10000000
-            val fadePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-            fadePaint.shader = LinearGradient(
-                0f, 0f, 0f, fadeH,
-                intArrayOf(bgColor, midColor),
-                null, Shader.TileMode.CLAMP)
-            canvas.drawRect(0f, 0f, W, fadeH, fadePaint)
-            fadePaint.shader = null
-        }
+        // Background handled by keyboard_panel container in keyboard_view.xml.
+        // MyKeyboardView draws nothing here — fully transparent.
 
         val kb      = keyboard ?: run { super.onDraw(canvas); return }
         val keys    = kb.keys  ?: run { super.onDraw(canvas); return }
@@ -333,6 +399,13 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     }
                 }
             }
+        }
+        // Draw custom key preview overlay
+        if (previewLabel.isNotEmpty() && !previewRect.isEmpty) {
+            val r = dp(10f)
+            canvas.drawRoundRect(previewRect, r, r, previewBgPaint)
+            val ty = previewRect.centerY() - (previewPaint.descent() + previewPaint.ascent()) / 2f
+            canvas.drawText(previewLabel, previewRect.centerX(), ty, previewPaint)
         }
     }
 }

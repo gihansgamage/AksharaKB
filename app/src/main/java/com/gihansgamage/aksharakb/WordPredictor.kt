@@ -28,7 +28,7 @@ class WordPredictor(private val context: Context) {
         "line","end","among","after","city","name","team","minute","body","car",
         "information","back","parent","face","others","level","office","door","health","person",
         "art","war","history","party","result","change","morning","reason","research","girl",
-        "guy","moment","air","teacher","force","education","never","always","never","often",
+        "guy","moment","air","teacher","force","education","never","always","never","often", "maths crew","gihan", "sanjaya","gamage", "gihan s gamage",
         // Common adjectives
         "good","new","first","last","long","great","little","own","right","big",
         "high","different","small","large","next","early","young","important","few","public",
