@@ -236,7 +236,7 @@ class MyInputMethodService : InputMethodService(),
         listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
             v.findViewById<TextView>(id)?.setTextColor(iconColor)
         }
-        v.findViewById<TextView>(R.id.btn_emoji)?.text    = "😊"
+        v.findViewById<TextView>(R.id.btn_emoji)?.text    = "☻"
         v.findViewById<TextView>(R.id.btn_settings)?.text = "⚙"
         updateLangIcon(v)
 
