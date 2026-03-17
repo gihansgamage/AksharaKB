@@ -218,7 +218,6 @@ class MyInputMethodService : InputMethodService(),
             )
         // Root keyboard container: transparent — blur comes from window
         v.setBackgroundColor(0x00000000)
-        updateLangIcon(v)
         keyboardView        = v.findViewById(R.id.keyboard_view)
         // Theme-aware colors for candidate bar icons
         val dark = isDark()
@@ -242,6 +241,11 @@ class MyInputMethodService : InputMethodService(),
             phoneticBuffer.clear(); currentInput.clear()
             setKeyboardLayout(); updateLangIcon(v); updateCandidates("")
         }
+
+        // Set icon text in code — XML unicode attrs can render incorrectly on some fonts
+        // Set stable icon labels once — never touched again
+        v.findViewById<TextView>(R.id.btn_emoji)?.text    = "☺"   // ☺ U+263A
+        v.findViewById<TextView>(R.id.btn_settings)?.text = "⚙"   // ⚙ U+2699
 
         // Emoji button
         v.findViewById<TextView>(R.id.btn_emoji)?.setOnClickListener {
@@ -344,19 +348,17 @@ class MyInputMethodService : InputMethodService(),
 
     // Update the single language switch icon label
     private fun updateLangIcon(rootView: android.view.View? = null) {
-        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+        val lang  = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
         val label = when (lang) {
-            KeyboardPreferences.LANG_SI -> "සිං"
-            KeyboardPreferences.LANG_TA -> "தமி"
+            KeyboardPreferences.LANG_SI -> "සිං"   // සිං
+            KeyboardPreferences.LANG_TA -> "தமி"   // தமி
             else                        -> "En"
         }
         val dark = isDark()
         val col  = if (dark) 0xCCFFFFFF.toInt() else 0xCC1A1A2E.toInt()
-        // Try to find the view from the passed root, or from keyboardView parent
         val root = rootView ?: (keyboardView?.parent as? android.view.View)
         root?.findViewById<TextView>(R.id.btn_lang_single)?.apply {
-            text = label
-            setTextColor(col)
+            text = label; textSize = 12f; setTextColor(col)
         }
     }
 

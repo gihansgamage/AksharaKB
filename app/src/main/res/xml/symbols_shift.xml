@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Symbols keyboard — SHIFTED state.
+  Shift key in row 4 to match position of shift in regular keyboards.
+  Shows alternative symbols not visible in normal symbols layout.
+-->
+<Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
+    android:keyWidth="10%p"
+    android:keyHeight="44dp"
+    android:horizontalGap="0dp"
+    android:verticalGap="0dp">
+
+    <!-- Row 1: numbers -->
+    <Row>
+        <Key android:codes="49"  android:keyLabel="1" android:keyEdgeFlags="left"/>
+        <Key android:codes="50"  android:keyLabel="2"/>
+        <Key android:codes="51"  android:keyLabel="3"/>
+        <Key android:codes="52"  android:keyLabel="4"/>
+        <Key android:codes="53"  android:keyLabel="5"/>
+        <Key android:codes="54"  android:keyLabel="6"/>
+        <Key android:codes="55"  android:keyLabel="7"/>
+        <Key android:codes="56"  android:keyLabel="8"/>
+        <Key android:codes="57"  android:keyLabel="9"/>
+        <Key android:codes="48"  android:keyLabel="0" android:keyEdgeFlags="right"/>
+    </Row>
+
+    <!-- Row 2: shifted symbol row -->
+    <Row>
+        <Key android:codes="169" android:keyLabel="©" android:keyEdgeFlags="left"/>
+        <Key android:codes="174" android:keyLabel="®"/>
+        <Key android:codes="8482" android:keyLabel="™"/>
+        <Key android:codes="8364" android:keyLabel="€"/>
+        <Key android:codes="163"  android:keyLabel="£"/>
+        <Key android:codes="165"  android:keyLabel="¥"/>
+        <Key android:codes="8776" android:keyLabel="≈"/>
+        <Key android:codes="8800" android:keyLabel="≠"/>
+        <Key android:codes="177"  android:keyLabel="±"/>
+        <Key android:codes="247"  android:keyLabel="÷" android:keyEdgeFlags="right"/>
+    </Row>
+
+    <!-- Row 3: more shifted symbols -->
+    <Row>
+        <Key android:codes="215"  android:keyLabel="×" android:keyEdgeFlags="left"/>
+        <Key android:codes="8734" android:keyLabel="∞"/>
+        <Key android:codes="167"  android:keyLabel="§"/>
+        <Key android:codes="182"  android:keyLabel="¶"/>
+        <Key android:codes="8226" android:keyLabel="•"/>
+        <Key android:codes="8230" android:keyLabel="…"/>
+        <Key android:codes="8211" android:keyLabel="–"/>
+        <Key android:codes="8212" android:keyLabel="—"/>
+        <Key android:codes="8592" android:keyLabel="←"/>
+        <Key android:codes="8594" android:keyLabel="→" android:keyEdgeFlags="right"/>
+    </Row>
+
+    <!-- Row 4: shift key + extra symbols + delete -->
+    <Row>
+        <Key android:codes="-1"  android:keyLabel="⇧"
+            android:keyWidth="13%p" android:keyEdgeFlags="left"
+            android:isModifier="true" android:isSticky="true"/>
+        <Key android:codes="8593" android:keyLabel="↑"/>
+        <Key android:codes="8595" android:keyLabel="↓"/>
+        <Key android:codes="171"  android:keyLabel="«"/>
+        <Key android:codes="187"  android:keyLabel="»"/>
+        <Key android:codes="8220" android:keyLabel="&#8220;"/>
+        <Key android:codes="8221" android:keyLabel="&#8221;"/>
+        <Key android:codes="180"  android:keyLabel="´"/>
+        <Key android:codes="-5"   android:keyLabel="⌫"
+            android:keyWidth="20%p" android:keyEdgeFlags="right"
+            android:isRepeatable="true"/>
+    </Row>
+
+    <!-- Bottom row -->
+    <Row android:rowEdgeFlags="bottom">
+        <Key android:codes="-2"  android:keyLabel="ABC"
+            android:keyWidth="18%p" android:keyEdgeFlags="left"/>
+        <Key android:codes="44"  android:keyLabel=","
+            android:keyWidth="12%p"/>
+        <Key android:codes="32"  android:keyLabel="space"
+            android:keyWidth="38%p"/>
+        <Key android:codes="46"  android:keyLabel="."
+            android:keyWidth="12%p"/>
+        <Key android:codes="-4"  android:keyLabel="↵"
+            android:keyWidth="20%p" android:keyEdgeFlags="right"/>
+    </Row>
+
+</Keyboard>
