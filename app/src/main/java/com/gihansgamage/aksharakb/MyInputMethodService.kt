@@ -56,6 +56,7 @@ class MyInputMethodService : InputMethodService(),
     private var vowelAwaitingReorder = false
     private var lastTappedEmoji = ""
     private var lastPressedEmoji = ""  // emoji captured in onPress
+    private var lastPhoneticCommitLen = 0 // Track length of last phonetic commit
 
     // ── Wijesekara shift map ──────────────────────────────────────
     // Exact values from spec, verified with python3 ord()
@@ -79,7 +80,7 @@ class MyInputMethodService : InputMethodService(),
     private val wijShiftMap = mapOf(
         // Row 1
         3540 to 3542, 3461 to 3467, 3536 to 3537, 3515 to 3469, 3473 to 3476,
-        3524 to 3475, 3512 to 3513, 3523 to 3522, 3503 to 3504, 3488 to 3489,
+        3524 to 3521, 3512 to 3513, 3523 to 3522, 3503 to 3504, 3488 to 3489,
         // Row 2 (simple substitutions — H and J handled specially)
         3530 to 3551, 3538 to 3539,
         // D key: ා(3535) normal, Shift→ෘ(3544) — note ා also on A key
@@ -105,7 +106,7 @@ class MyInputMethodService : InputMethodService(),
     // ── Phonetic maps ─────────────────────────────────────────────
     private val sinhalaPhoneticMap = listOf(
         "aa" to "ආ","ii" to "ඊ","uu" to "ඌ","ee" to "ඒ","oo" to "ඕ",
-        "kh" to "ඛ","gh" to "ඝ","ng" to "ඞ","ch" to "ච","jh" to "ඣ",
+        "kh" to "ඛ","gh" to "ඝ","gnh" to "ඥ","ch" to "ච","jh" to "ඣ",
         "ny" to "ඤ","th" to "ථ","dh" to "ධ","ph" to "ඵ","bh" to "භ",
         "sh" to "ශ","ll" to "ළ","nj" to "ඤ",
         "a" to "අ","i" to "ඉ","u" to "උ","e" to "එ","o" to "ඔ",
@@ -600,6 +601,7 @@ class MyInputMethodService : InputMethodService(),
     // ── Key handling ──────────────────────────────────────────────
     override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
         val ic = currentInputConnection ?: return; vibrateKey()
+        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
         // (emoji keyboard handled below via isEmoji state)
 
         when (primaryCode) {
@@ -613,7 +615,7 @@ class MyInputMethodService : InputMethodService(),
                 lastPressedEmoji = ""
             }
 
-    // ── Exit emoji keyboard when ?123 or ABC is pressed ───
+            // ── Exit emoji keyboard when ?123 or ABC is pressed ───
             Keyboard.KEYCODE_MODE_CHANGE -> {
                 isComposingWord = false
                 if (isEmoji) {
@@ -626,8 +628,13 @@ class MyInputMethodService : InputMethodService(),
             Keyboard.KEYCODE_DELETE -> {
                 isComposingWord = false
                 awaitingZWJ = false; vowelAwaitingReorder = false
-                if (isPhoneticMode && phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1)
-                ic.deleteSurroundingText(1, 0)
+                if (isPhoneticMode && phoneticBuffer.isNotEmpty()) {
+                    phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1)
+                    tryPhoneticConvert(lang)
+                } else {
+                    ic.deleteSurroundingText(1, 0)
+                    lastPhoneticCommitLen = 0
+                }
                 if (currentInput.isNotEmpty()) currentInput.deleteCharAt(currentInput.length - 1)
                 updateCandidates(currentInput.toString())
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
@@ -659,12 +666,11 @@ class MyInputMethodService : InputMethodService(),
             }
             32 -> { // Space
                 isComposingWord = false
-                awaitingZWJ = false; vowelAwaitingReorder = false; phoneticBuffer.clear(); ic.commitText(" ", 1); learnAndReset()
+                awaitingZWJ = false; vowelAwaitingReorder = false; phoneticBuffer.clear(); lastPhoneticCommitLen = 0; ic.commitText(" ", 1); learnAndReset()
             }
             else -> {
                 isComposingWord = true
                 if (primaryCode <= 0) return
-                val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
                 val isWij = lang == KeyboardPreferences.LANG_SI &&
                         prefs?.sinhalaLayout == KeyboardPreferences.LAYOUT_WIJESEKARA && !isSymbols
                 when {
@@ -707,9 +713,13 @@ class MyInputMethodService : InputMethodService(),
         val leftVowels = setOf('\u0DD9', '\u0DDA', '\u0DDB', '\u0DDC', '\u0DDD', '\u0DDE')
         val textBefore2 = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
         
-        // Mark fresh left-side vowel for reordering
+        // Handle left-side vowels (Visual order)
         if (outStr.length == 1 && outStr[0] in leftVowels) {
+            // Show the vowel immediately but hide circle using ZWSP
+            ic.commitText("\u200B" + outStr, 1)
+            currentInput.append(outStr)
             vowelAwaitingReorder = true
+            afterWij(shifted); return
         }
 
         // Consolidated Smart Vowel Compositions (Shift-Aware)
@@ -739,6 +749,33 @@ class MyInputMethodService : InputMethodService(),
                 currentInput.deleteCharAt(currentInput.length - 1)
             }
             currentInput.append("\u0D96")
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false 
+            afterWij(shifted); return
+        }
+
+        // එ (0D91) + ෙ (0DD9) -> ඓ (0D93) [Logical Order]
+        if (textBefore2.endsWith("\u0D91") && isKombu2Char) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0D93", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D91') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0D93")
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false 
+            afterWij(shifted); return
+        }
+
+        // ෙ (0DD9) + එ (0D91) -> ඓ (0D93) [Visual Order]
+        if (textBefore2.endsWith("\u0DD9") && outStr == "\u0D91") {
+            ic.deleteSurroundingText(1, 0)
+            if (textBefore2.startsWith("\u200B")) ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0D93", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0D93")
             updateCandidates(currentInput.toString())
             vowelAwaitingReorder = false 
             afterWij(shifted); return
@@ -779,29 +816,14 @@ class MyInputMethodService : InputMethodService(),
         }
         // ෙ (0DD9) + ් (0DCA) -> ේ (0DDA)
         if (isViramaChar) {
-            if (textBefore2.endsWith("\u0DD9")) { // Consonant + ෙ
+            if (textBefore2.endsWith("\u0DD9")) {
                 ic.deleteSurroundingText(1, 0)
+                if (textBefore2.startsWith("\u200B")) ic.deleteSurroundingText(1, 0)
                 ic.commitText("\u0DDA", 1)
                 if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
                     currentInput.deleteCharAt(currentInput.length - 1)
                 }
                 currentInput.append("\u0DDA")
-                updateCandidates(currentInput.toString())
-                val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
-                val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
-                vowelAwaitingReorder = !isBeforeConsonant
-                afterWij(shifted); return
-            } else if (textBefore2.length >= 2 && textBefore2[0] == '\u0DD9' && isSinhalaConsonant(textBefore2[1])) {
-                // ෙ + Consonant -> Consonant + ේ
-                val cons = textBefore2[1]
-                ic.deleteSurroundingText(2, 0)
-                ic.commitText(cons.toString() + "\u0DDA", 1)
-                if (currentInput.isNotEmpty() && currentInput.length >= 2 && currentInput[currentInput.length - 1] == cons && currentInput[currentInput.length - 2] == '\u0DD9') {
-                    currentInput.setLength(currentInput.length - 2)
-                    currentInput.append(cons).append("\u0DDA")
-                } else {
-                    currentInput.setLength(0); currentInput.append(ic.getTextBeforeCursor(20, 0))
-                }
                 updateCandidates(currentInput.toString())
                 vowelAwaitingReorder = false
                 afterWij(shifted); return
@@ -810,29 +832,14 @@ class MyInputMethodService : InputMethodService(),
 
         // ෙ (0DD9) + ා (0DCF) -> ො (0DDC)
         if (isAalChar) {
-            if (textBefore2.endsWith("\u0DD9")) { // Consonant + ෙ
+            if (textBefore2.endsWith("\u0DD9")) {
                 ic.deleteSurroundingText(1, 0)
+                if (textBefore2.startsWith("\u200B")) ic.deleteSurroundingText(1, 0)
                 ic.commitText("\u0DDC", 1)
                 if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
                     currentInput.deleteCharAt(currentInput.length - 1)
                 }
                 currentInput.append("\u0DDC")
-                updateCandidates(currentInput.toString())
-                val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
-                val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
-                vowelAwaitingReorder = !isBeforeConsonant
-                afterWij(shifted); return
-            } else if (textBefore2.length >= 2 && textBefore2[0] == '\u0DD9' && isSinhalaConsonant(textBefore2[1])) {
-                // ෙ + Consonant -> Consonant + ො
-                val cons = textBefore2[1]
-                ic.deleteSurroundingText(2, 0)
-                ic.commitText(cons.toString() + "\u0DDC", 1)
-                if (currentInput.isNotEmpty() && currentInput.length >= 2 && currentInput[currentInput.length - 1] == cons && currentInput[currentInput.length - 2] == '\u0DD9') {
-                    currentInput.setLength(currentInput.length - 2)
-                    currentInput.append(cons).append("\u0DDC")
-                } else {
-                    currentInput.setLength(0); currentInput.append(ic.getTextBeforeCursor(20, 0))
-                }
                 updateCandidates(currentInput.toString())
                 vowelAwaitingReorder = false
                 afterWij(shifted); return
@@ -938,18 +945,19 @@ class MyInputMethodService : InputMethodService(),
         val firstChar = outStr.firstOrNull() ?: '\u0000'
         val isConsonant = firstChar.code in 0x0D9A..0x0DC6
         
-        if (vowelAwaitingReorder && isConsonant && textBefore2.isNotEmpty() && textBefore2.last() in leftVowels) {
+        if (vowelAwaitingReorder && isConsonant && textBefore2.isNotEmpty() && textBefore2.last() == '\u0DD9') {
             ic.deleteSurroundingText(1, 0)
-            ic.commitText(outStr + textBefore2.last(), 1)
+            if (textBefore2.startsWith("\u200B")) ic.deleteSurroundingText(1, 0)
+            ic.commitText(outStr + "\u0DD9", 1)
             
-            // Fix currentInput sync: remove the vowel, then add outStr + vowel
-            if (currentInput.isNotEmpty() && currentInput.last() == textBefore2.last()) {
+            // Fix currentInput sync
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
                 currentInput.deleteCharAt(currentInput.length - 1)
             }
-            currentInput.append(outStr).append(textBefore2.last())
+            currentInput.append(outStr).append("\u0DD9")
             
             updateCandidates(currentInput.toString())
-            vowelAwaitingReorder = false // Only reorder ONCE
+            vowelAwaitingReorder = false 
             afterWij(shifted); return
         }
 
@@ -994,8 +1002,13 @@ class MyInputMethodService : InputMethodService(),
     private fun handlePhonetic(code: Int, ic: android.view.inputmethod.InputConnection, lang: String) {
         val ch = code.toChar()
         if (ch.isLetter()) {
-            phoneticBuffer.append(ch.lowercaseChar()); ic.commitText(ch.toString(), 1); tryPhoneticConvert(lang)
-        } else { phoneticBuffer.clear(); ic.commitText(ch.toString(), 1) }
+            phoneticBuffer.append(ch.lowercaseChar())
+            tryPhoneticConvert(lang)
+        } else { 
+            phoneticBuffer.clear()
+            lastPhoneticCommitLen = 0
+            ic.commitText(ch.toString(), 1) 
+        }
     }
 
     private fun handleDirect(code: Int, ic: android.view.inputmethod.InputConnection) {
@@ -1065,45 +1078,80 @@ class MyInputMethodService : InputMethodService(),
 
     private fun tryPhoneticConvert(lang: String) {
         val buf = phoneticBuffer.toString()
+        if (buf.isEmpty()) {
+            lastPhoneticCommitLen = 0
+            return
+        }
+
         if (lang == KeyboardPreferences.LANG_TA) {
-            // Tamil: use existing flat map
+            // Tamil: use existing logic but with lastPhoneticCommitLen
             for (len in minOf(3, buf.length) downTo 1) {
-                val s = buf.takeLast(len); val m = tamilPhoneticMap.firstOrNull { it.first == s } ?: continue
-                currentInputConnection?.deleteSurroundingText(len, 0)
-                currentInputConnection?.commitText(m.second, 1)
+                val s = buf.takeLast(len)
+                val m = tamilPhoneticMap.firstOrNull { it.first == s } ?: continue
+                val ic = currentInputConnection ?: return
+                ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
+                ic.commitText(m.second, 1)
+                lastPhoneticCommitLen = m.second.length
+                // For Tamil, we currently clear buffer after match for simplicity as per original flow
                 repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
-                currentInput.append(m.second); updateCandidates(currentInput.toString()); return
+                currentInput.append(m.second)
+                updateCandidates(currentInput.toString())
+                return
             }
         } else {
             val ic = currentInputConnection ?: return
 
             // ── Phase 1: Context-aware vowel attachment ──────────────────
-            // If the last committed Sinhala character is HAL (®), and the phonetic
-            // buffer starts with a vowel pattern, attach it as a diacritic instead of
-            // outputting an independent vowel.
-            // e.g.: 'm' already produced ම® → typing 'a' → delete ®, leave ම (inherent a)
-            //       'm' already produced ම® → typing 'aa' → delete ®, add ා → මමා
-            val textBefore = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
-            if (textBefore.isNotEmpty() && textBefore.last() == '\u0DCA' /* HAL */) {
+            // If the buffer looks like a vowel sign, check if the last char is HAL.
+            val textBefore = ic.getTextBeforeCursor(1, 0)?.toString() ?: ""
+            if (textBefore.endsWith('\u0DCA')) {
                 val vowelMatch = SinhalaPhonetic.tryGetVowelSign(buf)
                 if (vowelMatch != null) {
-                    val (len, sign) = vowelMatch
-                    ic.deleteSurroundingText(1, 0)          // delete the HAL
-                    if (sign.isNotEmpty()) ic.commitText(sign, 1)  // add diacritic (empty = inherent a)
-                    repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
-                    currentInput.append(sign)
-                    updateCandidates(currentInput.toString()); return
+                    val (consumed, sign) = vowelMatch
+                    ic.deleteSurroundingText(1, 0) // delete the HAL
+                    ic.commitText(sign, 1)
+                    lastPhoneticCommitLen = lastPhoneticCommitLen - 1 + sign.length
+                    
+                    // A vowel sign usually completes a syllable, so we clear the buffer for matched chars
+                    val remaining = buf.substring(consumed)
+                    phoneticBuffer.setLength(0)
+                    phoneticBuffer.append(remaining)
+                    
+                    // We don't return here if there's remaining buffer, but usually vowel completes it.
+                    if (remaining.isEmpty()) {
+                        lastPhoneticCommitLen = 0 // Syllable done
+                        updateCandidates(currentInput.toString())
+                        return
+                    }
                 }
             }
 
             // ── Phase 2: Normal syllable conversion ──────────────────────
             val match = SinhalaPhonetic.tryConvert(buf)
             if (match != null) {
-                val (len, sinhala) = match
-                ic.deleteSurroundingText(len, 0)
+                val (consumed, sinhala) = match
+                ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
                 ic.commitText(sinhala, 1)
-                repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
-                currentInput.append(sinhala); updateCandidates(currentInput.toString()); return
+                lastPhoneticCommitLen = sinhala.length
+                
+                // If it's a complete syllable (ends with a vowel sign or it's a standalone vowel), clear buffer
+                // In our SinhalaPhonetic engine, consonants end with HAL by default if no vowel follows.
+                if (!sinhala.endsWith('\u0DCA')) {
+                    // It's a full syllable or vowel. Clear matched part.
+                    val remaining = buf.substring(consumed)
+                    phoneticBuffer.setLength(0)
+                    phoneticBuffer.append(remaining)
+                    if (remaining.isEmpty()) {
+                        lastPhoneticCommitLen = 0 // Syllable done
+                    }
+                }
+                updateCandidates(currentInput.toString())
+                return
+            } else {
+                // No match yet. Show the English characters so user knows what's happening.
+                ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
+                ic.commitText(buf, 1)
+                lastPhoneticCommitLen = buf.length
             }
         }
         updateCandidates(currentInput.toString())
