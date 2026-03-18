@@ -23,9 +23,9 @@
         <Key android:codes="3461" android:keyLabel="අ" android:popupCharacters="උ"/>
         <Key android:codes="3536" android:keyLabel="ැ" android:popupCharacters="ෑ"/>
         <Key android:codes="3515" android:keyLabel="ර" android:popupCharacters="ඍ"/>
-        <Key android:codes="3473" android:keyLabel="එ" android:popupCharacters="ඔ"/>
+        <Key android:codes="3473" android:keyLabel="එ" android:popupCharacters="ඔ ඕ"/>
         <Key android:codes="3524" android:keyLabel="හ" android:popupCharacters="ශ ඥ"/>
-        <Key android:codes="3512" android:keyLabel="ම" android:popupCharacters="ඹ ඖ"/>
+        <Key android:codes="3512" android:keyLabel="ම" android:popupCharacters="ඹ"/>
         <Key android:codes="3523" android:keyLabel="ස" android:popupCharacters="ෂ"/>
         <Key android:codes="3503" android:keyLabel="ද" android:popupCharacters="ධ ඳ"/>
         <Key android:codes="3488" android:keyLabel="ච" android:popupCharacters="ඡ" android:keyEdgeFlags="right"/>

@@ -482,7 +482,8 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                 }
                 shifted -> {
                     // Universal shifted label retrieval from XML popupCharacters
-                    val popupRaw = key.popupCharacters?.toString()?.trim() ?: ""
+                    val isNumberKey = (code in 48..57)
+                    val popupRaw = if (isNumberKey) "" else (key.popupCharacters?.toString()?.trim() ?: "")
                     val popupFirst = popupRaw.split(" ").firstOrNull()?.trim() ?: ""
                     val sv = fixDottedCircle(popupFirst.ifEmpty { shiftedLabel(rawLabel) }.ifEmpty { rawLabel })
                     textPaint.color    = t.textNorm

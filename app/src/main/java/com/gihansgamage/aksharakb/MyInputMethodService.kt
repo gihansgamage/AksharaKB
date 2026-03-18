@@ -62,7 +62,7 @@ class MyInputMethodService : InputMethodService(),
     //
     // Row 1 (Q-P):
     //   Q: ු(3540)→ූ(3542)    W: අ(3461)→උ(3467)    E: ැ(3536)→ෑ(3537)
-    //   R: ර(3515)→ඍ(3469)    T: එ(3473)→ඒ(3474)    Y: හ(3524)→ඓ(3475)
+    //   R: ර(3515)→ඍ(3469)    T: එ(3473)→ඔ(3476)    Y: හ(3524)→ඓ(3475)
     //   U: ම(3512)→ඖ(3478)    I: ස(3523)→ෂ(3522)    O: ද(3503)→ධ(3504)
     //   P: ච(3488)→ඡ(3489)
     // Row 2 (A-;):
@@ -78,7 +78,7 @@ class MyInputMethodService : InputMethodService(),
     //   1→! 2→@ 3→# 4→$ 5→% 6→^ 7→& 8→* 9→( 0→) -→_ =→+
     private val wijShiftMap = mapOf(
         // Row 1
-        3540 to 3542, 3461 to 3467, 3536 to 3537, 3515 to 3469, 3473 to 3474,
+        3540 to 3542, 3461 to 3467, 3536 to 3537, 3515 to 3469, 3473 to 3476,
         3524 to 3475, 3512 to 3513, 3523 to 3522, 3503 to 3504, 3488 to 3489,
         // Row 2 (simple substitutions — H and J handled specially)
         3530 to 3551, 3538 to 3539,
@@ -95,9 +95,7 @@ class MyInputMethodService : InputMethodService(),
         3510 to 3511, 3508 to 3509, 3517 to 3525, 3484 to 3485,
         46   to 63,
         // Number row
-        49 to 33, 50 to 64, 51 to 35, 52 to 36, 53 to 37,
-        54 to 94, 55 to 38, 56 to 42, 57 to 40, 48 to 41,
-        45 to 95, 61 to 43
+        // Number row (removed from shift map to keep numbers as numbers)
     )
 
     private val NORMAL_YA  = 3514  // H key
@@ -175,14 +173,13 @@ class MyInputMethodService : InputMethodService(),
 
     override fun onWindowShown() {
         super.onWindowShown()
-        // window.setBackgroundBlurRadius blurs the IME window's background region ONLY.
-        // Because the keyboard draws a semi-transparent overlay (not fully opaque),
-        // the blurred background shows through — frosted glass effect, keyboard area only.
-        // This does NOT blur the app content above the keyboard.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            try {
-                window?.window?.setBackgroundBlurRadius(60)
-            } catch (_: Exception) {}
+        window?.window?.let { w ->
+            w.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                try {
+                    w.setBackgroundBlurRadius(60)
+                } catch (_: Exception) {}
+            }
         }
     }
 
@@ -214,6 +211,10 @@ class MyInputMethodService : InputMethodService(),
         root?.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(emojiRes)
         root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         
+        // Root keyboard container: apply glass-like tint (low opacity)
+        val bgCol = if (isDark()) 0x44333333.toInt() else 0x44CCCCCC.toInt()
+        root?.setBackgroundColor(bgCol)
+        
         // Dynamically update emoji and settings icon colors based on theme
         val iconColor = if (isDark()) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
         listOf(R.id.btn_emoji, R.id.btn_settings).forEach { id ->
@@ -237,8 +238,9 @@ class MyInputMethodService : InputMethodService(),
         v.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
         v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(emojiRes)
         v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
-        // Root keyboard container: transparent — blur comes from window
-        v.setBackgroundColor(0x00000000)
+        // Root keyboard container: apply glass-like tint (low opacity)
+        val bgCol = if (isDark()) 0x44333333.toInt() else 0x44CCCCCC.toInt()
+        v.setBackgroundColor(bgCol)
         updateLangIcon(v)
         keyboardView        = v.findViewById(R.id.keyboard_view)
         // Theme-aware colors for candidate bar icons
@@ -668,7 +670,8 @@ class MyInputMethodService : InputMethodService(),
         
         // Resolve shifted character dynamically from keyboard XML popupCharacters
         var outStr = code.toChar().toString()
-        if (shifted) {
+        val isNumberKey = code in 48..57
+        if (shifted && !isNumberKey) {
             val key = keyboardView?.keyboard?.keys?.find { it.codes?.firstOrNull() == code }
             val popStr = key?.popupCharacters?.toString()?.trim() ?: ""
             val firstPop = popStr.split(" ").firstOrNull() ?: ""
@@ -679,12 +682,143 @@ class MyInputMethodService : InputMethodService(),
 
         // Smart Reordering: if fresh left-side vowel (ෙ, ේ, ෛ) was typed,
         // and current is a consonant, swap them.
-        val leftVowels = setOf('\u0DD9', '\u0DDA', '\u0DDB')
+        // Left-side vowels that require reordering with the following consonant
+        val leftVowels = setOf('\u0DD9', '\u0DDA', '\u0DDB', '\u0DDC', '\u0DDD', '\u0DDE')
         val textBefore2 = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
         
-        // Mark fresh left-side vowel for reordering
+        // Mark fresh left-side vowel for reordering ONLY if it doesn't follow a consonant
         if (outStr.length == 1 && outStr[0] in leftVowels) {
-            vowelAwaitingReorder = true
+            val prevChar = if (textBefore2.isNotEmpty()) textBefore2.last() else '\u0000'
+            val isPrevConsonant = prevChar.code in 0x0D9A..0x0DC6
+            if (!isPrevConsonant) {
+                vowelAwaitingReorder = true
+            }
+        }
+
+        // Smart Vowel Composition: ඔ (0D94) + ් (0DCA/3530) -> ඕ (0D95)
+        if (textBefore2.endsWith("\u0D94") && code == 3530) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0D95", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D94') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0D95")
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false
+            afterWij(shifted); return
+        }
+        
+        // Smart Vowel Composition: ෙ (0DD9) + ් (0DCA/3530) -> ේ (0DDA)
+        if (textBefore2.endsWith("\u0DD9") && code == 3530) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0DDA", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0DDA")
+            updateCandidates(currentInput.toString())
+            
+            val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
+            val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
+            vowelAwaitingReorder = !isBeforeConsonant
+            
+            afterWij(shifted); return
+        }
+
+        // Smart Vowel Composition: ෙ (0DD9) + ෙ (0DD9/3545) -> ෛ (0DDB)
+        if (textBefore2.endsWith("\u0DD9") && code == 3545) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0DDB", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0DDB")
+            updateCandidates(currentInput.toString())
+            
+            val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
+            val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
+            vowelAwaitingReorder = !isBeforeConsonant
+            
+            afterWij(shifted); return
+        }
+
+        // Smart Vowel Composition: ෙ (0DD9) + ා (3535) -> ො (0DDC)
+        if (textBefore2.endsWith("\u0DD9") && code == 3535) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0DDC", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0DDC")
+            updateCandidates(currentInput.toString())
+            
+            val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
+            val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
+            vowelAwaitingReorder = !isBeforeConsonant
+            
+            afterWij(shifted); return
+        }
+
+        // Smart Vowel Composition: ේ (0DDA) + ා (3535) -> ෝ (0DDD)
+        // OR ො (0DDC) + ් (3530) -> ෝ (0DDD)
+        if ((textBefore2.endsWith("\u0DDA") && code == 3535) || (textBefore2.endsWith("\u0DDC") && code == 3530)) {
+            val lastCharBefore = textBefore2.last()
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0DDD", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == lastCharBefore) {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0DDD")
+            updateCandidates(currentInput.toString())
+            
+            val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
+            val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
+            vowelAwaitingReorder = !isBeforeConsonant
+            
+            afterWij(shifted); return
+        }
+
+        // Smart Vowel Composition: ෙ (0DD9) + ෟ (3551) -> ෞ (0DDE)
+        if (textBefore2.endsWith("\u0DD9") && code == 3551) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0DDE", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0DDE")
+            updateCandidates(currentInput.toString())
+            
+            val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
+            val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
+            vowelAwaitingReorder = !isBeforeConsonant
+            
+            afterWij(shifted); return
+        }
+
+        // Smart Vowel Composition: ඔ (0D94) + ෟ (3551) -> ඖ (0D96)
+        if (textBefore2.endsWith("\u0D94") && code == 3551) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0D96", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D94') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0D96")
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false 
+            afterWij(shifted); return
+        }
+
+        // Smart Vowel Composition: ඒ (0D92) + ෟ (3551) -> ඖ (0D96)
+        if (textBefore2.endsWith("\u0D92") && code == 3551) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0D96", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D92') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0D96")
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false 
+            afterWij(shifted); return
         }
 
         // Smart Vowel Composition: අ (0D85) + ා (0DCF/3535) -> ආ (0D86), අ + ැ (0DD0/3536) -> ඇ (0D87), අ + ෑ (0DD1/3537) -> ඈ (0D88)
