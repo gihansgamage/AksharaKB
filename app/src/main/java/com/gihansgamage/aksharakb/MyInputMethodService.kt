@@ -696,14 +696,9 @@ class MyInputMethodService : InputMethodService(),
             }
         }
 
-        // A vowel is "hanging" if it's the last char and either:
-        // 1. It's the only char (length 1)
-        // 2. The char before it is NOT a consonant (0x0D9A..0x0DC6)
-        val isHangingVowel = if (textBefore2.length == 1) {
-            textBefore2[0] in leftVowels
-        } else if (textBefore2.length == 2) {
-            textBefore2[1] in leftVowels && textBefore2[0].code !in 0x0D9A..0x0DC6
-        } else false
+        // A vowel is "hanging" if it's the last char.
+        // We always try to reorder if it's a left-side vowel (ෙ, ේ, ෛ).
+        val isHangingVowel = textBefore2.isNotEmpty() && textBefore2.last() in leftVowels
 
         if (isHangingVowel) {
             // Check if outStr starts with a consonant
@@ -878,24 +873,7 @@ class MyInputMethodService : InputMethodService(),
         val c = candidatesContainer ?: return; c.removeAllViews()
         val rootView = keyboardView?.rootView
         
-        // Contextual visibility based on isComposingWord
-        rootView?.findViewById<android.view.View>(R.id.pill_lang_emoji)?.visibility = if (isComposingWord) android.view.View.GONE else android.view.View.VISIBLE
-        rootView?.findViewById<android.view.View>(R.id.pill_settings)?.visibility = if (isComposingWord) android.view.View.GONE else android.view.View.VISIBLE
-        
-        // Dynamic horizontal layout adjustments
-        rootView?.findViewById<android.view.View>(R.id.candidate_bar)?.let { bar ->
-            val lp = bar.layoutParams as? android.view.ViewGroup.MarginLayoutParams
-            if (lp != null) {
-                // Expand to full-width only when composing a word
-                val margin = if (isComposingWord) 0 else dp(8f).toInt()
-                if (lp.marginStart != margin || lp.marginEnd != margin) {
-                    lp.marginStart = margin
-                    lp.marginEnd = margin
-                    bar.layoutParams = lp
-                }
-            }
-        }
-        candidatesScroll?.setPadding(if (isComposingWord) 0 else dp(8f).toInt(), 0, if (isComposingWord) 0 else dp(8f).toInt(), 0)
+        // Candidate bar width and visibility are now static for consistency
 
         if (!(prefs?.showPredictions ?: true)) return
         val lang = prefs?.currentLanguage ?: "EN"
