@@ -53,6 +53,7 @@ class MyInputMethodService : InputMethodService(),
     private var emojiPage      = 0      // which page of emojis (10 per row × 3 rows = 30 per page)
     private var currentInput   = StringBuilder()
     private var awaitingZWJ    = false
+    private var vowelAwaitingReorder = false
     private var lastTappedEmoji = ""
     private var lastPressedEmoji = ""  // emoji captured in onPress
 
@@ -594,7 +595,7 @@ class MyInputMethodService : InputMethodService(),
                 lastPressedEmoji = ""
             }
 
-            // ── Exit emoji keyboard when ?123 or ABC is pressed ───
+    // ── Exit emoji keyboard when ?123 or ABC is pressed ───
             Keyboard.KEYCODE_MODE_CHANGE -> {
                 isComposingWord = false
                 if (isEmoji) {
@@ -606,7 +607,7 @@ class MyInputMethodService : InputMethodService(),
 
             Keyboard.KEYCODE_DELETE -> {
                 isComposingWord = false
-                awaitingZWJ = false
+                awaitingZWJ = false; vowelAwaitingReorder = false
                 if (isPhoneticMode && phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1)
                 ic.deleteSurroundingText(1, 0)
                 if (currentInput.isNotEmpty()) currentInput.deleteCharAt(currentInput.length - 1)
@@ -633,14 +634,14 @@ class MyInputMethodService : InputMethodService(),
             // KEYCODE_MODE_CHANGE handled above in emoji section
             Keyboard.KEYCODE_DONE -> {
                 isComposingWord = false
-                awaitingZWJ = false; phoneticBuffer.clear()
+                awaitingZWJ = false; vowelAwaitingReorder = false; phoneticBuffer.clear()
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP,   KeyEvent.KEYCODE_ENTER))
                 learnAndReset()
             }
             32 -> { // Space
                 isComposingWord = false
-                awaitingZWJ = false; phoneticBuffer.clear(); ic.commitText(" ", 1); learnAndReset()
+                awaitingZWJ = false; vowelAwaitingReorder = false; phoneticBuffer.clear(); ic.commitText(" ", 1); learnAndReset()
             }
             else -> {
                 isComposingWord = true
@@ -657,6 +658,11 @@ class MyInputMethodService : InputMethodService(),
         }
     }
 
+    private fun isSinhalaConsonantOrVirama(c: Char): Boolean {
+        val code = c.code
+        return (code in 0x0D9A..0x0DC6) || code == 0x0DCA
+    }
+
     private fun commitWijesekara(code: Int, ic: android.view.inputmethod.InputConnection) {
         val shifted = capsState != CapsState.NONE
         
@@ -671,11 +677,16 @@ class MyInputMethodService : InputMethodService(),
             }
         }
 
-        // Smart Reordering: if last character is a left-side vowel (ෙ, ේ, ෛ)
+        // Smart Reordering: if fresh left-side vowel (ෙ, ේ, ෛ) was typed,
         // and current is a consonant, swap them.
         val leftVowels = setOf('\u0DD9', '\u0DDA', '\u0DDB')
         val textBefore2 = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
         
+        // Mark fresh left-side vowel for reordering
+        if (outStr.length == 1 && outStr[0] in leftVowels) {
+            vowelAwaitingReorder = true
+        }
+
         // Smart Vowel Composition: අ (0D85) + ා (0DCF/3535) -> ආ (0D86), අ + ැ (0DD0/3536) -> ඇ (0D87), අ + ෑ (0DD1/3537) -> ඈ (0D88)
         if (textBefore2.endsWith("\u0D85")) {
             val combined = when (code) {
@@ -692,37 +703,40 @@ class MyInputMethodService : InputMethodService(),
                 }
                 currentInput.append(combined)
                 updateCandidates(currentInput.toString())
+                vowelAwaitingReorder = false
                 afterWij(shifted); return
             }
         }
 
-        // A vowel is "hanging" if it's the last char.
-        // We always try to reorder if it's a left-side vowel (ෙ, ේ, ෛ).
-        val isHangingVowel = textBefore2.isNotEmpty() && textBefore2.last() in leftVowels
-
-        if (isHangingVowel) {
-            // Check if outStr starts with a consonant
-            val firstChar = outStr.firstOrNull() ?: '\u0000'
-            if (firstChar.code in 0x0D9A..0x0DC6) {
-                ic.deleteSurroundingText(1, 0)
-                ic.commitText(outStr + textBefore2.last(), 1)
-                
-                // Fix currentInput sync: remove the vowel, then add outStr + vowel
-                if (currentInput.isNotEmpty() && currentInput.last() == textBefore2.last()) {
-                    currentInput.deleteCharAt(currentInput.length - 1)
-                }
-                currentInput.append(outStr).append(textBefore2.last())
-                
-                updateCandidates(currentInput.toString())
-                afterWij(shifted); return
+        // A vowel is reorderable if vowelAwaitingReorder is true and outStr is a consonant.
+        val firstChar = outStr.firstOrNull() ?: '\u0000'
+        val isConsonant = firstChar.code in 0x0D9A..0x0DC6
+        
+        if (vowelAwaitingReorder && isConsonant && textBefore2.isNotEmpty() && textBefore2.last() in leftVowels) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText(outStr + textBefore2.last(), 1)
+            
+            // Fix currentInput sync: remove the vowel, then add outStr + vowel
+            if (currentInput.isNotEmpty() && currentInput.last() == textBefore2.last()) {
+                currentInput.deleteCharAt(currentInput.length - 1)
             }
+            currentInput.append(outStr).append(textBefore2.last())
+            
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false // Only reorder ONCE
+            afterWij(shifted); return
         }
 
         // ZWJ compound: if awaiting ZWJ, prefix ZWJ before next char
         if (awaitingZWJ && code != 3530 /* ් */) {
             ic.commitText("$ZWJ$outStr", 1)
             currentInput.append("$ZWJ$outStr")
-            awaitingZWJ = false; afterWij(shifted); return
+            awaitingZWJ = false; vowelAwaitingReorder = false; afterWij(shifted); return
+        }
+
+        // Reset reorder state if we type something else that shouldn't be reordered
+        if (!isConsonant && outStr[0] !in leftVowels) {
+            vowelAwaitingReorder = false
         }
 
         ic.commitText(outStr, 1)
