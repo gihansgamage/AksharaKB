@@ -47,6 +47,7 @@ class MyInputMethodService : InputMethodService(),
     private var isPhoneticMode = false
     private var isSymbols      = false
     private var isEmoji        = false   // true when emoji keyboard is shown
+    private var isComposingWord = false
     private var showEmoji      = false   // legacy candidate-bar emoji (now unused)
     private var emojiCategory  = 0      // 0-7 active emoji category
     private var emojiPage      = 0      // which page of emojis (10 per row × 3 rows = 30 per page)
@@ -375,8 +376,14 @@ class MyInputMethodService : InputMethodService(),
         val dark = isDark()
         val col  = if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
         val root = rootView ?: (keyboardView?.parent as? android.view.View)
+        val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
+        val label = when (lang) {
+            KeyboardPreferences.LANG_SI -> "සිං"
+            KeyboardPreferences.LANG_TA -> "தமி"
+            else -> "En"
+        }
         root?.findViewById<TextView>(R.id.btn_lang_single)?.apply {
-            text = "🌐\uFE0E"; textSize = 18f; setTextColor(col)
+            text = label; textSize = 14f; setTextColor(col)
         }
     }
 
@@ -589,6 +596,7 @@ class MyInputMethodService : InputMethodService(),
 
             // ── Exit emoji keyboard when ?123 or ABC is pressed ───
             Keyboard.KEYCODE_MODE_CHANGE -> {
+                isComposingWord = false
                 if (isEmoji) {
                     isEmoji = false; setKeyboardLayout()
                 } else {
@@ -597,6 +605,7 @@ class MyInputMethodService : InputMethodService(),
             }
 
             Keyboard.KEYCODE_DELETE -> {
+                isComposingWord = false
                 awaitingZWJ = false
                 if (isPhoneticMode && phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1)
                 ic.deleteSurroundingText(1, 0)
@@ -605,6 +614,7 @@ class MyInputMethodService : InputMethodService(),
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
             }
             Keyboard.KEYCODE_SHIFT -> {
+                isComposingWord = false
                 if (isSymbols) {
                     // Symbols: simple toggle NONE↔SHIFT only (no CAPS_LOCK)
                     capsState = if (capsState == CapsState.NONE) CapsState.SHIFT else CapsState.NONE
@@ -622,13 +632,18 @@ class MyInputMethodService : InputMethodService(),
             }
             // KEYCODE_MODE_CHANGE handled above in emoji section
             Keyboard.KEYCODE_DONE -> {
+                isComposingWord = false
                 awaitingZWJ = false; phoneticBuffer.clear()
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP,   KeyEvent.KEYCODE_ENTER))
                 learnAndReset()
             }
-            32 -> { awaitingZWJ = false; phoneticBuffer.clear(); ic.commitText(" ", 1); learnAndReset() }
+            32 -> { // Space
+                isComposingWord = false
+                awaitingZWJ = false; phoneticBuffer.clear(); ic.commitText(" ", 1); learnAndReset()
+            }
             else -> {
+                isComposingWord = true
                 if (primaryCode <= 0) return
                 val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
                 val isWij = lang == KeyboardPreferences.LANG_SI &&
@@ -661,6 +676,26 @@ class MyInputMethodService : InputMethodService(),
         val leftVowels = setOf('\u0DD9', '\u0DDA', '\u0DDB')
         val textBefore2 = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
         
+        // Smart Vowel Composition: අ (0D85) + ා (0DCF/3535) -> ආ (0D86), අ + ැ (0DD0/3536) -> ඇ (0D87), අ + ෑ (0DD1/3537) -> ඈ (0D88)
+        if (textBefore2.endsWith("\u0D85")) {
+            val combined = when (code) {
+                3535 -> "\u0D86" // ආ
+                3536 -> "\u0D87" // ඇ
+                3537 -> "\u0D88" // ඈ
+                else -> null
+            }
+            if (combined != null) {
+                ic.deleteSurroundingText(1, 0)
+                ic.commitText(combined, 1)
+                if (currentInput.isNotEmpty() && currentInput.last() == '\u0D85') {
+                    currentInput.deleteCharAt(currentInput.length - 1)
+                }
+                currentInput.append(combined)
+                updateCandidates(currentInput.toString())
+                afterWij(shifted); return
+            }
+        }
+
         // A vowel is "hanging" if it's the last char and either:
         // 1. It's the only char (length 1)
         // 2. The char before it is NOT a consonant (0x0D9A..0x0DC6)
@@ -718,6 +753,7 @@ class MyInputMethodService : InputMethodService(),
         if (isWij && text.toString() == "්‍") { awaitingZWJ = true; return }
         ic.commitText(text, 1); currentInput.append(text)
         updateCandidates(currentInput.toString())
+        isComposingWord = true
     }
 
     private fun handlePhonetic(code: Int, ic: android.view.inputmethod.InputConnection, lang: String) {
@@ -840,13 +876,27 @@ class MyInputMethodService : InputMethodService(),
 
     private fun updateCandidates(input: String) {
         val c = candidatesContainer ?: return; c.removeAllViews()
-        val rootView = keyboardView?.parent as? android.view.View
+        val rootView = keyboardView?.rootView
         
-        // Hide icons when typing, dedicate whole bar to predictions
-        val isTyping = input.isNotEmpty()
-        rootView?.findViewById<android.view.View>(R.id.pill_lang_emoji)?.visibility = if (isTyping) android.view.View.GONE else android.view.View.VISIBLE
-        rootView?.findViewById<android.view.View>(R.id.pill_settings)?.visibility = if (isTyping) android.view.View.GONE else android.view.View.VISIBLE
+        // Contextual visibility based on isComposingWord
+        rootView?.findViewById<android.view.View>(R.id.pill_lang_emoji)?.visibility = if (isComposingWord) android.view.View.GONE else android.view.View.VISIBLE
+        rootView?.findViewById<android.view.View>(R.id.pill_settings)?.visibility = if (isComposingWord) android.view.View.GONE else android.view.View.VISIBLE
         
+        // Dynamic horizontal layout adjustments
+        rootView?.findViewById<android.view.View>(R.id.candidate_bar)?.let { bar ->
+            val lp = bar.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            if (lp != null) {
+                // Expand to full-width only when composing a word
+                val margin = if (isComposingWord) 0 else dp(8f).toInt()
+                if (lp.marginStart != margin || lp.marginEnd != margin) {
+                    lp.marginStart = margin
+                    lp.marginEnd = margin
+                    bar.layoutParams = lp
+                }
+            }
+        }
+        candidatesScroll?.setPadding(if (isComposingWord) 0 else dp(8f).toInt(), 0, if (isComposingWord) 0 else dp(8f).toInt(), 0)
+
         if (!(prefs?.showPredictions ?: true)) return
         val lang = prefs?.currentLanguage ?: "EN"
         val emojis = if (lang == KeyboardPreferences.LANG_EN && input.isNotEmpty())
@@ -929,12 +979,14 @@ class MyInputMethodService : InputMethodService(),
 
     private fun commitSuggestion(word: String) {
         val ic = currentInputConnection ?: return
+        isComposingWord = false
         if (currentInput.isNotEmpty()) ic.deleteSurroundingText(currentInput.length, 0)
         ic.commitText("$word ", 1); wordPredictor?.learnWord(word); clipboard?.save(word)
         currentInput.clear(); updateCandidates("")
     }
 
     private fun learnAndReset() {
+        isComposingWord = false
         if (currentInput.isNotEmpty()) { wordPredictor?.learnWord(currentInput.toString()); clipboard?.save(currentInput.toString()) }
         currentInput.clear(); updateCandidates("")
     }

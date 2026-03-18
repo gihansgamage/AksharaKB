@@ -61,7 +61,7 @@
         <Key android:codes="3465" android:keyLabel="ඉ"  android:keyWidth="9%p"  android:popupCharacters="ඊ"/>
         <Key android:codes="3510" android:keyLabel="බ"  android:keyWidth="9%p"  android:popupCharacters="භ"/>
         <Key android:codes="3508" android:keyLabel="ප"  android:keyWidth="10%p" android:popupCharacters="ඵ"/>
-        <Key android:codes="3517" android:keyLabel="ල"  android:keyWidth="10%p" android:popupCharacters="ළ ඹ"/>
+        <Key android:codes="3517" android:keyLabel="ල"  android:keyWidth="10%p" android:popupCharacters="ළ"/>
         <Key android:codes="3484" android:keyLabel="ග"  android:keyWidth="9%p"  android:popupCharacters="ඟ ඝ"/>
         <Key android:codes="-5"   android:keyLabel="⌫"
             android:keyWidth="13%p" android:keyEdgeFlags="right"
