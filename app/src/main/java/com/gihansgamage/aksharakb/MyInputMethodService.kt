@@ -91,7 +91,7 @@ class MyInputMethodService : InputMethodService(),
         // H(3514)→ZWJ compound, J(3520)→ළු: handled in commitWijesekara
         3505 to 3499, 3482 to 3483, 3501 to 3502,
         // Row 3
-        3458 to 3459, 3490 to 3491, 3497 to 3498, 3465 to 3466,
+        3458 to 3459, 3490 to 3486, 3497 to 3498, 3465 to 3466,
         3510 to 3511, 3508 to 3509, 3517 to 3525, 3484 to 3485,
         46   to 63,
         // Number row

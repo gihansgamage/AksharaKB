@@ -250,8 +250,10 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
     
     private fun fixDottedCircle(text: String): String {
         if (text.isEmpty()) return text
-        // If it starts with a Sinhala combining mark (0x0DCA..0x0DF3), prepend Zero Width Joiner
-        return if (text[0].code in 3530..3571) "\u200D" + text else text
+        // If it starts with a Sinhala combining mark or certain signs (0x0D82, 0x0D83, 0x0DCA..0x0DF3), prepend NBSP
+        val c = text[0].code
+        val isModifier = (c in 3530..3571) || (c == 3458) || (c == 3459)
+        return if (isModifier) "\u00A0" + text else text
     }
 
     fun setKeyboardImage(b: Bitmap?) { keyboardBg = b; invalidate() }
