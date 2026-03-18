@@ -168,6 +168,22 @@ class MyInputMethodService : InputMethodService(),
         super.onCreate()
         prefs = KeyboardPreferences(this); wordPredictor = WordPredictor(this)
         clipboard = KeyboardClipboard(this); prefs?.registerListener(this)
+        loadRecentEmojis()
+    }
+
+    private fun loadRecentEmojis() {
+        val raw = prefs?.recentEmojis ?: ""
+        recentEmojis.clear()
+        recentEmojis.addAll(raw.split(",").filter { it.isNotBlank() })
+    }
+
+    private fun saveRecentEmoji(e: String) {
+        recentEmojis.remove(e)
+        recentEmojis.add(0, e)
+        if (recentEmojis.size > MAX_RECENT) {
+            recentEmojis.removeAt(recentEmojis.lastIndex)
+        }
+        prefs?.recentEmojis = recentEmojis.joinToString(",")
     }
     override fun onDestroy() { prefs?.unregisterListener(this); super.onDestroy() }
 
@@ -212,7 +228,7 @@ class MyInputMethodService : InputMethodService(),
         root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         
         // Root keyboard container: apply glass-like tint (low opacity)
-        val bgCol = if (isDark()) 0x44333333.toInt() else 0x44CCCCCC.toInt()
+        val bgCol = if (isDark()) 0x331A1A1A.toInt() else 0x44EEEEEE.toInt()
         root?.setBackgroundColor(bgCol)
         
         // Dynamically update emoji and settings icon colors based on theme
@@ -239,7 +255,7 @@ class MyInputMethodService : InputMethodService(),
         v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(emojiRes)
         v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         // Root keyboard container: apply glass-like tint (low opacity)
-        val bgCol = if (isDark()) 0x44333333.toInt() else 0x44CCCCCC.toInt()
+        val bgCol = if (isDark()) 0x331A1A1A.toInt() else 0x44EEEEEE.toInt()
         v.setBackgroundColor(bgCol)
         updateLangIcon(v)
         keyboardView        = v.findViewById(R.id.keyboard_view)
@@ -280,7 +296,7 @@ class MyInputMethodService : InputMethodService(),
             vibrateKey()
             isEmoji = !isEmoji
             if (isEmoji) {
-                emojiCategory = 0; emojiPage = 0
+                emojiCategory = -1; emojiPage = 0
             } else {
                 updateCandidates(currentInput.toString())
             }
@@ -530,9 +546,9 @@ class MyInputMethodService : InputMethodService(),
                     if (emoji.isNotBlank()) setOnClickListener {
                         vibrateKey()
                         currentInputConnection?.commitText(emoji, 1)
-                        recentEmojis.remove(emoji)
-                        recentEmojis.add(0, emoji)
-                        if (recentEmojis.size > MAX_RECENT) recentEmojis.removeAt(recentEmojis.lastIndex)
+                        saveRecentEmoji(emoji)
+                        // Refresh grid if in Recent tab to show new order immediately
+                        if (activeCategoryIndex == -1) buildEmojiPanel(-1)
                     }
                 })
             }
@@ -1115,10 +1131,13 @@ class MyInputMethodService : InputMethodService(),
     private fun showEmojiPanel(catIndex: Int) {
         val c = candidatesContainer ?: return
         c.removeAllViews()
-        emojiCategory = catIndex.coerceIn(0, emojiCategories.lastIndex)
+        
+        // Ensure index is valid among our 9 categories (Recent + 8 standard)
+        val tabCount = 1 + emojiCategories.size
+        emojiCategory = catIndex.coerceIn(0, tabCount - 1)
 
-        // Category tab icons — use representative emoji for each category tab
-        val catIcons = listOf("😀", "👋", "❤", "🐾", "🍔", "🚗", "⚽", "💡")
+        // Category tab icons — add Recent (🕑) at index 0
+        val catIcons = listOf("🕑", "😀", "👋", "❤", "🐾", "🍔", "🚗", "⚽", "💡")
         catIcons.forEachIndexed { idx, icon ->
             val isActive = idx == emojiCategory
             c.addView(TextView(this).apply {
@@ -1150,8 +1169,11 @@ class MyInputMethodService : InputMethodService(),
             setBackgroundColor(0x44FFFFFF)
         })
 
-        // All emojis for selected category — scrollable
-        emojiCategories[emojiCategory].second.forEach { emoji ->
+        // Emojis for selected category
+        val emojisToShow = if (emojiCategory == 0) recentEmojis 
+                           else emojiCategories[emojiCategory - 1].second
+                           
+        emojisToShow.forEach { emoji ->
             c.addView(TextView(this).apply {
                 text = emoji
                 textSize = 24f
@@ -1163,7 +1185,9 @@ class MyInputMethodService : InputMethodService(),
                 ).also { it.setMargins(dp(1f).toInt(), dp(3f).toInt(), dp(1f).toInt(), dp(3f).toInt()) }
                 setOnClickListener {
                     currentInputConnection?.commitText(emoji, 1)
-                    // keep panel open so user can pick more
+                    saveRecentEmoji(emoji)
+                    // Refresh if in Recent tab to show new order immediately
+                    if (emojiCategory == 0) showEmojiPanel(0)
                 }
             })
         }

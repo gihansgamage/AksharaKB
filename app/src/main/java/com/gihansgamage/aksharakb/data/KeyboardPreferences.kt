@@ -21,6 +21,7 @@ class KeyboardPreferences(context: Context) {
         const val KEY_SHOW_PREDICTIONS = "show_predictions"
         const val KEY_SHOW_POPUP       = "show_popup_keys"
         const val KEY_SHOW_NUMPAD      = "show_number_pad"
+        const val KEY_RECENT_EMOJIS    = "recent_emojis"
 
         // Two themes only
         const val THEME_LIGHT   = "default"   // kept as "default" for backwards compat
@@ -98,6 +99,10 @@ class KeyboardPreferences(context: Context) {
     var showNumberPad: Boolean
         get() = prefs.getBoolean(KEY_SHOW_NUMPAD, true)
         set(v) = prefs.edit().putBoolean(KEY_SHOW_NUMPAD, v).apply()
+
+    var recentEmojis: String
+        get() = prefs.getString(KEY_RECENT_EMOJIS, "") ?: ""
+        set(v) = prefs.edit().putString(KEY_RECENT_EMOJIS, v).apply()
 
     fun registerListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) =
         prefs.registerOnSharedPreferenceChangeListener(listener)
