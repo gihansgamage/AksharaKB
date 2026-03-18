@@ -222,6 +222,7 @@ class MyInputMethodService : InputMethodService(),
         // Refresh lang pills and keyboard in case theme changed
         keyboardView?.refreshPrefs()
         rebuildLangPills()
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
     }
 
     override fun onCreateInputView(): View {
@@ -267,6 +268,7 @@ class MyInputMethodService : InputMethodService(),
             isSymbols = false; capsState = CapsState.NONE; awaitingZWJ = false
             phoneticBuffer.clear(); currentInput.clear()
             setKeyboardLayout(); updateLangIcon(v); updateCandidates("")
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
         }
 
         // Emoji button
@@ -360,6 +362,7 @@ class MyInputMethodService : InputMethodService(),
                     isSymbols = false; capsState = CapsState.NONE; awaitingZWJ = false
                     phoneticBuffer.clear(); currentInput.clear()
                     setKeyboardLayout(); rebuildLangPills(); updateCandidates("")
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
                 }
             }
             container.addView(pill)
@@ -599,6 +602,7 @@ class MyInputMethodService : InputMethodService(),
                 ic.deleteSurroundingText(1, 0)
                 if (currentInput.isNotEmpty()) currentInput.deleteCharAt(currentInput.length - 1)
                 updateCandidates(currentInput.toString())
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
             }
             Keyboard.KEYCODE_SHIFT -> {
                 if (isSymbols) {
