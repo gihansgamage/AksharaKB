@@ -433,8 +433,10 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
             }
 
             // ── 7. Labels ─────────────────────────────────────────
-            val rawLabel = key.label?.toString()
-                ?: if (code > 31) code.toChar().toString() else ""
+            val rawLabel = when {
+                code == 92 -> "\\"
+                else -> key.label?.toString() ?: if (code > 31) code.toChar().toString() else ""
+            }
 
             when {
                 isEmojiKey(code) -> {
@@ -504,7 +506,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     val popups = popupRaw.split(" ").filter { it.isNotBlank() }
                     
                     val hintChar = when {
-                        popups.size >= 2 && !isSpecial(code) && code !in 32..127 -> popups[1] // 3-char logic (base + shift + long-press): the 2nd popup is the long press hint
+                        popups.size >= 2 && !isSpecial(code) && code !in 32..127 && code != 3530 -> popups[1] // 3-char logic (base + shift + long-press): the 2nd popup is the long press hint
                         code in hintKeyCodes && popups.isNotEmpty() -> popups[0]
                         else -> ""
                     }
@@ -533,8 +535,9 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                         hintPaint.color    = if (isDark()) 0xAAFFFFFF.toInt() else 0x88222222.toInt()
                         hintPaint.textSize = basePx * 0.42f
                         val dispHint = fixDottedCircle(hintChar)
-                        val hx = ri - dp(2f)
-                        val hy = ky + dp(2f) - hintPaint.ascent()
+                        // Adjust padding to ensure it fits safely inside the 11dp rounded corners
+                        val hx = ri - dp(8f)
+                        val hy = ky + dp(6f) - hintPaint.ascent()
                         canvas.drawText(dispHint, hx, hy, hintPaint)
                     }
                 }

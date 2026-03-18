@@ -373,7 +373,7 @@ class MyInputMethodService : InputMethodService(),
         val col  = if (dark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
         val root = rootView ?: (keyboardView?.parent as? android.view.View)
         root?.findViewById<TextView>(R.id.btn_lang_single)?.apply {
-            text = "🌐"; textSize = 18f; setTextColor(col)
+            text = "🌐\uFE0E"; textSize = 18f; setTextColor(col)
         }
     }
 
@@ -652,6 +652,38 @@ class MyInputMethodService : InputMethodService(),
             }
         }
 
+        // Smart Reordering: if last character is a left-side vowel (ෙ, ේ, ෛ)
+        // and current is a consonant, swap them.
+        val leftVowels = setOf('\u0DD9', '\u0DDA', '\u0DDB')
+        val textBefore2 = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+        
+        // A vowel is "hanging" if it's the last char and either:
+        // 1. It's the only char (length 1)
+        // 2. The char before it is NOT a consonant (0x0D9A..0x0DC6)
+        val isHangingVowel = if (textBefore2.length == 1) {
+            textBefore2[0] in leftVowels
+        } else if (textBefore2.length == 2) {
+            textBefore2[1] in leftVowels && textBefore2[0].code !in 0x0D9A..0x0DC6
+        } else false
+
+        if (isHangingVowel) {
+            // Check if outStr starts with a consonant
+            val firstChar = outStr.firstOrNull() ?: '\u0000'
+            if (firstChar.code in 0x0D9A..0x0DC6) {
+                ic.deleteSurroundingText(1, 0)
+                ic.commitText(outStr + textBefore2.last(), 1)
+                
+                // Fix currentInput sync: remove the vowel, then add outStr + vowel
+                if (currentInput.isNotEmpty() && currentInput.last() == textBefore2.last()) {
+                    currentInput.deleteCharAt(currentInput.length - 1)
+                }
+                currentInput.append(outStr).append(textBefore2.last())
+                
+                updateCandidates(currentInput.toString())
+                afterWij(shifted); return
+            }
+        }
+
         // ZWJ compound: if awaiting ZWJ, prefix ZWJ before next char
         if (awaitingZWJ && code != 3530 /* ් */) {
             ic.commitText("$ZWJ$outStr", 1)
@@ -758,25 +790,70 @@ class MyInputMethodService : InputMethodService(),
 
     private fun tryPhoneticConvert(lang: String) {
         val buf = phoneticBuffer.toString()
-        val map = if (lang == KeyboardPreferences.LANG_TA) tamilPhoneticMap else sinhalaPhoneticMap
-        for (len in minOf(3, buf.length) downTo 1) {
-            val s = buf.takeLast(len); val m = map.firstOrNull { it.first == s } ?: continue
-            currentInputConnection?.deleteSurroundingText(len, 0)
-            currentInputConnection?.commitText(m.second, 1)
-            repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
-            currentInput.append(m.second); updateCandidates(currentInput.toString()); return
+        if (lang == KeyboardPreferences.LANG_TA) {
+            // Tamil: use existing flat map
+            for (len in minOf(3, buf.length) downTo 1) {
+                val s = buf.takeLast(len); val m = tamilPhoneticMap.firstOrNull { it.first == s } ?: continue
+                currentInputConnection?.deleteSurroundingText(len, 0)
+                currentInputConnection?.commitText(m.second, 1)
+                repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
+                currentInput.append(m.second); updateCandidates(currentInput.toString()); return
+            }
+        } else {
+            val ic = currentInputConnection ?: return
+
+            // ── Phase 1: Context-aware vowel attachment ──────────────────
+            // If the last committed Sinhala character is HAL (®), and the phonetic
+            // buffer starts with a vowel pattern, attach it as a diacritic instead of
+            // outputting an independent vowel.
+            // e.g.: 'm' already produced ම® → typing 'a' → delete ®, leave ම (inherent a)
+            //       'm' already produced ම® → typing 'aa' → delete ®, add ා → මමා
+            val textBefore = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+            if (textBefore.isNotEmpty() && textBefore.last() == '\u0DCA' /* HAL */) {
+                val vowelMatch = SinhalaPhonetic.tryGetVowelSign(buf)
+                if (vowelMatch != null) {
+                    val (len, sign) = vowelMatch
+                    ic.deleteSurroundingText(1, 0)          // delete the HAL
+                    if (sign.isNotEmpty()) ic.commitText(sign, 1)  // add diacritic (empty = inherent a)
+                    repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
+                    currentInput.append(sign)
+                    updateCandidates(currentInput.toString()); return
+                }
+            }
+
+            // ── Phase 2: Normal syllable conversion ──────────────────────
+            val match = SinhalaPhonetic.tryConvert(buf)
+            if (match != null) {
+                val (len, sinhala) = match
+                ic.deleteSurroundingText(len, 0)
+                ic.commitText(sinhala, 1)
+                repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
+                currentInput.append(sinhala); updateCandidates(currentInput.toString()); return
+            }
         }
         updateCandidates(currentInput.toString())
     }
 
     private fun updateCandidates(input: String) {
         val c = candidatesContainer ?: return; c.removeAllViews()
+        val rootView = keyboardView?.parent as? android.view.View
+        
+        // Hide icons when typing, dedicate whole bar to predictions
+        val isTyping = input.isNotEmpty()
+        rootView?.findViewById<android.view.View>(R.id.pill_lang_emoji)?.visibility = if (isTyping) android.view.View.GONE else android.view.View.VISIBLE
+        rootView?.findViewById<android.view.View>(R.id.pill_settings)?.visibility = if (isTyping) android.view.View.GONE else android.view.View.VISIBLE
+        
         if (!(prefs?.showPredictions ?: true)) return
         val lang = prefs?.currentLanguage ?: "EN"
-        val words = wordPredictor?.getSuggestions(input, lang) ?: emptyList()
         val emojis = if (lang == KeyboardPreferences.LANG_EN && input.isNotEmpty())
             wordPredictor?.getEmojiSuggestions(input) ?: emptyList() else emptyList()
-        (words + emojis).take(8).forEach { w -> addChip(c, w) { commitSuggestion(w) } }
+
+        // Async callback: called twice — instantly with local, then again with internet merged
+        wordPredictor?.getSuggestions(input, lang) { words ->
+            val combined = (words + emojis).distinct().take(10)
+            c.removeAllViews()
+            combined.forEach { w -> addChip(c, w) { commitSuggestion(w) } }
+        }
     }
 
     private fun showEmojiPanel(catIndex: Int) {

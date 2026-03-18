@@ -1,25 +1,30 @@
 package com.gihansgamage.aksharakb
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+import java.util.concurrent.Executors
 
 class WordPredictor(private val context: Context) {
 
+    private val executor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+
     // ── English — top ~300 most-used words ranked by frequency ────
-    // Ordered so that more common words appear first in suggestions
     private val englishWords = listOf(
-        // Top 50 most frequent
         "the","be","to","of","and","a","in","that","have","it",
         "for","not","on","with","he","as","you","do","at","this",
         "but","his","by","from","they","we","say","her","she","or",
         "an","will","my","one","all","would","there","their","what","so",
         "up","out","if","about","who","get","which","go","me","when",
-        // Common verbs
         "make","can","like","time","know","take","see","come","think","look",
         "want","give","use","find","tell","ask","seem","feel","try","leave",
         "call","keep","let","begin","show","hear","play","run","move","live",
         "believe","hold","bring","happen","write","provide","sit","stand","lose","pay",
         "meet","include","continue","set","learn","change","lead","understand","watch","follow",
-        // Common nouns
         "people","year","way","day","man","woman","child","world","life","hand",
         "part","place","case","week","company","system","program","question","government","number",
         "night","point","home","water","room","mother","area","money","story","fact",
@@ -27,27 +32,24 @@ class WordPredictor(private val context: Context) {
         "side","kind","head","house","service","friend","father","power","hour","game",
         "line","end","among","after","city","name","team","minute","body","car",
         "information","back","parent","face","others","level","office","door","health","person",
-        "art","war","history","party","result","change","morning","reason","research","girl",
-        "guy","moment","air","teacher","force","education","never","always","never","often", "maths crew","gihan", "sanjaya","gamage", "gihan s gamage",
-        // Common adjectives
+        "art","war","history","party","result","morning","reason","research","girl","guy",
+        "moment","air","teacher","force","education","never","always","often",
         "good","new","first","last","long","great","little","own","right","big",
         "high","different","small","large","next","early","young","important","few","public",
         "bad","same","able","old","real","best","free","sure","true","hard",
         "beautiful","happy","simple","easy","fast","better","other","every","strong","open",
-        // Conversational / messaging
         "hello","hi","hey","thanks","thank","please","sorry","yes","no","okay",
         "ok","love","help","need","going","here","where","why","because","how",
         "really","just","very","also","well","still","even","back","then","too",
-        "already","yet","again","soon","maybe","probably","actually","definitely","maybe","however",
+        "already","yet","again","soon","maybe","probably","actually","definitely","however",
         "though","although","anyway","else","either","both","each","most","some","any",
         "more","less","much","many","enough","only","quite","rather","almost","nearly",
-        // Tech / modern
         "phone","message","email","today","tomorrow","yesterday","morning","evening","night",
         "android","app","google","facebook","instagram","whatsapp","youtube","twitter","camera","photo",
-        // Pronouns / articles / prepositions
         "him","them","these","those","its","our","your","their","mine","yours",
         "now","then","here","there","before","after","between","through","during","without",
-        "within","along","following","across","behind","beyond","plus","except","up","down", "baba","babe", "menika"
+        "within","along","following","across","behind","beyond","plus","except","up","down",
+        "gihan","sanjaya","gamage","gihan s gamage","maths crew","baba","babe","menika"
     )
 
     // ── Sinhala ────────────────────────────────────────────────────
@@ -76,7 +78,38 @@ class WordPredictor(private val context: Context) {
     // User-learned words with frequency count
     private val userWords = mutableMapOf<String, Int>()
 
+    /**
+     * Suggest words. Calls [callback] immediately with local results,
+     * then calls it again with internet results if available.
+     */
+    fun getSuggestions(input: String, language: String, callback: (List<String>) -> Unit) {
+        // Phase 1: instant local suggestions
+        val localResults = getLocalSuggestions(input, language)
+        callback(localResults)
+
+        // Phase 2: async internet suggestions (English only for now)
+        if (input.length >= 2 && language == "EN") {
+            executor.execute {
+                try {
+                    val internetResults = fetchInternetSuggestions(input)
+                    if (internetResults.isNotEmpty()) {
+                        // Merge: internet first, then local, deduplicated
+                        val merged = (internetResults + localResults).distinct().take(10)
+                        mainHandler.post { callback(merged) }
+                    }
+                } catch (_: Exception) {
+                    // Silently fail — local results already shown
+                }
+            }
+        }
+    }
+
+    /** Synchronous local lookup — for backward compatibility with learnAndReset */
     fun getSuggestions(input: String, language: String): List<String> {
+        return getLocalSuggestions(input, language)
+    }
+
+    private fun getLocalSuggestions(input: String, language: String): List<String> {
         if (input.isEmpty()) return getPopularWords(language)
 
         val wordList = when (language) {
@@ -86,20 +119,52 @@ class WordPredictor(private val context: Context) {
         }
         val inputLower = input.lowercase()
 
-        // User-learned words take priority
         val userMatches = userWords.keys
             .filter { it.lowercase().startsWith(inputLower) }
             .sortedByDescending { userWords[it] ?: 0 }
 
-        // Then frequency-ordered built-in list (order = frequency rank)
         val builtinStarts = wordList
             .filter { it.lowercase().startsWith(inputLower) && it.lowercase() != inputLower }
         val builtinContains = wordList
             .filter { !it.lowercase().startsWith(inputLower) && it.lowercase().contains(inputLower) }
 
-        return (userMatches + builtinStarts + builtinContains)
-            .distinct()
-            .take(6)
+        return (userMatches + builtinStarts + builtinContains).distinct().take(6)
+    }
+
+    /** Hit Google Suggest API and parse results */
+    private fun fetchInternetSuggestions(query: String): List<String> {
+        val encoded = URLEncoder.encode(query, "UTF-8")
+        // Use firefox client which returns compact JSON: ["q",["s1","s2",...],...]
+        val url = URL("https://suggestqueries.google.com/complete/search?client=firefox&q=$encoded")
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "GET"
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0")
+        conn.connectTimeout = 2000
+        conn.readTimeout = 2000
+
+        return try {
+            val response = conn.inputStream.bufferedReader().readText()
+            // Response format: ["query",["suggestion1","suggestion2",...],...metadata...]
+            // We want ONLY the second element (index 1) which is the string array.
+            // Find the second '[' which opens the suggestions sub-array
+            val firstBracket = response.indexOf('[')                 // outer [
+            val subArrayStart = response.indexOf('[', firstBracket + 1) // suggestions [
+            val subArrayEnd   = response.indexOf(']', subArrayStart + 1)
+            if (subArrayStart < 0 || subArrayEnd <= subArrayStart) return emptyList()
+
+            // Extract just the suggestions sub-array string and pull all quoted tokens
+            val subArray = response.substring(subArrayStart + 1, subArrayEnd)
+            Regex("\"([^\"]+)\"")
+                .findAll(subArray)
+                .map { it.groupValues[1] }
+                .filter { !it.contains(' ') && it.length > 1 }
+                .take(8)
+                .toList()
+        } catch (_: Exception) {
+            emptyList()
+        } finally {
+            conn.disconnect()
+        }
     }
 
     fun getEmojiSuggestions(input: String): List<String> {
@@ -148,7 +213,6 @@ class WordPredictor(private val context: Context) {
         return if (result.isEmpty()) listOf("😊","❤️","👍","🙏","😂") else result.take(5)
     }
 
-    // Show most useful words when no input yet
     private fun getPopularWords(lang: String) = when (lang) {
         "SI" -> listOf("ඔව්","නැහැ","ස්තූතියි","හොඳ","ආදරේ","කරුණාකර")
         "TA" -> listOf("ஆம்","இல்லை","நன்றி","நல்லது","காதல்","தயவுசெய்து")
