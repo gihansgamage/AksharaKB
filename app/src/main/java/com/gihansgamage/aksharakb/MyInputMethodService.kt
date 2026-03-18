@@ -668,15 +668,20 @@ class MyInputMethodService : InputMethodService(),
     private fun commitWijesekara(code: Int, ic: android.view.inputmethod.InputConnection) {
         val shifted = capsState != CapsState.NONE
         
-        // Resolve shifted character dynamically from keyboard XML popupCharacters
+        // Resolve shifted character: Prioritize wijShiftMap, then XML popup
         var outStr = code.toChar().toString()
         val isNumberKey = code in 48..57
         if (shifted && !isNumberKey) {
-            val key = keyboardView?.keyboard?.keys?.find { it.codes?.firstOrNull() == code }
-            val popStr = key?.popupCharacters?.toString()?.trim() ?: ""
-            val firstPop = popStr.split(" ").firstOrNull() ?: ""
-            if (firstPop.isNotEmpty()) {
-                outStr = firstPop
+            val mapShift = wijShiftMap[code]
+            if (mapShift != null) {
+                outStr = mapShift.toChar().toString()
+            } else {
+                val key = keyboardView?.keyboard?.keys?.find { it.codes?.firstOrNull() == code }
+                val popStr = key?.popupCharacters?.toString()?.trim() ?: ""
+                val firstPop = popStr.split(" ").firstOrNull() ?: ""
+                if (firstPop.isNotEmpty()) {
+                    outStr = firstPop
+                }
             }
         }
 
@@ -695,8 +700,14 @@ class MyInputMethodService : InputMethodService(),
             }
         }
 
-        // Smart Vowel Composition: ඔ (0D94) + ් (0DCA/3530) -> ඕ (0D95)
-        if (textBefore2.endsWith("\u0D94") && code == 3530) {
+        // Consolidated Smart Vowel Compositions (Shift-Aware)
+        val isViramaChar = (outStr == "\u0DCA") // A key (unshifted)
+        val isAalChar    = (outStr == "\u0DCF") // D key (unshifted)
+        val isKombu2Char = (outStr == "\u0DD9") // F key (unshifted)
+        val isGayanChar  = (outStr == "\u0DDF") // Shift+A
+
+        // ඔ (0D94) + ් (0DCA) -> ඕ (0D95)
+        if (textBefore2.endsWith("\u0D94") && isViramaChar) {
             ic.deleteSurroundingText(1, 0)
             ic.commitText("\u0D95", 1)
             if (currentInput.isNotEmpty() && currentInput.last() == '\u0D94') {
@@ -707,9 +718,22 @@ class MyInputMethodService : InputMethodService(),
             vowelAwaitingReorder = false
             afterWij(shifted); return
         }
-        
-        // Smart Vowel Composition: ෙ (0DD9) + ් (0DCA/3530) -> ේ (0DDA)
-        if (textBefore2.endsWith("\u0DD9") && code == 3530) {
+
+        // ඔ (0D94) + ෟ (0DDF) -> ඖ (0D96)
+        if (textBefore2.endsWith("\u0D94") && isGayanChar) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0D96", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D94') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0D96")
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false 
+            afterWij(shifted); return
+        }
+
+        // ෙ (0DD9) + ් (0DCA) -> ේ (0DDA)
+        if (textBefore2.endsWith("\u0DD9") && isViramaChar) {
             ic.deleteSurroundingText(1, 0)
             ic.commitText("\u0DDA", 1)
             if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
@@ -725,8 +749,8 @@ class MyInputMethodService : InputMethodService(),
             afterWij(shifted); return
         }
 
-        // Smart Vowel Composition: ෙ (0DD9) + ෙ (0DD9/3545) -> ෛ (0DDB)
-        if (textBefore2.endsWith("\u0DD9") && code == 3545) {
+        // ෙ (0DD9) + ෙ (0DD9) -> ෛ (0DDB)
+        if (textBefore2.endsWith("\u0DD9") && isKombu2Char) {
             ic.deleteSurroundingText(1, 0)
             ic.commitText("\u0DDB", 1)
             if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
@@ -742,8 +766,8 @@ class MyInputMethodService : InputMethodService(),
             afterWij(shifted); return
         }
 
-        // Smart Vowel Composition: ෙ (0DD9) + ා (3535) -> ො (0DDC)
-        if (textBefore2.endsWith("\u0DD9") && code == 3535) {
+        // ෙ (0DD9) + ා (0DCF) -> ො (0DDC)
+        if (textBefore2.endsWith("\u0DD9") && isAalChar) {
             ic.deleteSurroundingText(1, 0)
             ic.commitText("\u0DDC", 1)
             if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
@@ -759,13 +783,12 @@ class MyInputMethodService : InputMethodService(),
             afterWij(shifted); return
         }
 
-        // Smart Vowel Composition: ේ (0DDA) + ා (3535) -> ෝ (0DDD)
-        // OR ො (0DDC) + ් (3530) -> ෝ (0DDD)
-        if ((textBefore2.endsWith("\u0DDA") && code == 3535) || (textBefore2.endsWith("\u0DDC") && code == 3530)) {
-            val lastCharBefore = textBefore2.last()
+        // ේ (0DDA) + ා (0DCF) -> ෝ (0DDD)  OR  ො (0DDC) + ් (0DCA) -> ෝ (0DDD)
+        if ((textBefore2.endsWith("\u0DDA") && isAalChar) || (textBefore2.endsWith("\u0DDC") && isViramaChar)) {
+            val lastCharBeforeComposition = textBefore2.last()
             ic.deleteSurroundingText(1, 0)
             ic.commitText("\u0DDD", 1)
-            if (currentInput.isNotEmpty() && currentInput.last() == lastCharBefore) {
+            if (currentInput.isNotEmpty() && currentInput.last() == lastCharBeforeComposition) {
                 currentInput.deleteCharAt(currentInput.length - 1)
             }
             currentInput.append("\u0DDD")
@@ -778,8 +801,8 @@ class MyInputMethodService : InputMethodService(),
             afterWij(shifted); return
         }
 
-        // Smart Vowel Composition: ෙ (0DD9) + ෟ (3551) -> ෞ (0DDE)
-        if (textBefore2.endsWith("\u0DD9") && code == 3551) {
+        // ෙ (0DD9) + ෟ (0DDF) -> ෞ (0DDE)
+        if (textBefore2.endsWith("\u0DD9") && isGayanChar) {
             ic.deleteSurroundingText(1, 0)
             ic.commitText("\u0DDE", 1)
             if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
@@ -795,21 +818,8 @@ class MyInputMethodService : InputMethodService(),
             afterWij(shifted); return
         }
 
-        // Smart Vowel Composition: ඔ (0D94) + ෟ (3551) -> ඖ (0D96)
-        if (textBefore2.endsWith("\u0D94") && code == 3551) {
-            ic.deleteSurroundingText(1, 0)
-            ic.commitText("\u0D96", 1)
-            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D94') {
-                currentInput.deleteCharAt(currentInput.length - 1)
-            }
-            currentInput.append("\u0D96")
-            updateCandidates(currentInput.toString())
-            vowelAwaitingReorder = false 
-            afterWij(shifted); return
-        }
-
-        // Smart Vowel Composition: ඒ (0D92) + ෟ (3551) -> ඖ (0D96)
-        if (textBefore2.endsWith("\u0D92") && code == 3551) {
+        // Independent Vowel ඖ composition fallback: ඒ (0D92) + ෟ (0DDF) -> ඖ (0D96)
+        if (textBefore2.endsWith("\u0D92") && isGayanChar) {
             ic.deleteSurroundingText(1, 0)
             ic.commitText("\u0D96", 1)
             if (currentInput.isNotEmpty() && currentInput.last() == '\u0D92') {
@@ -821,12 +831,12 @@ class MyInputMethodService : InputMethodService(),
             afterWij(shifted); return
         }
 
-        // Smart Vowel Composition: අ (0D85) + ා (0DCF/3535) -> ආ (0D86), අ + ැ (0DD0/3536) -> ඇ (0D87), අ + ෑ (0DD1/3537) -> ඈ (0D88)
+        // Smart Vowel Composition: අ (0D85) + ා (0DCF) -> ආ (0D86), අ + ැ (0DD0) -> ඇ, අ + ෑ (0DD1) -> ඈ
         if (textBefore2.endsWith("\u0D85")) {
-            val combined = when (code) {
-                3535 -> "\u0D86" // ආ
-                3536 -> "\u0D87" // ඇ
-                3537 -> "\u0D88" // ඈ
+            val combined = when {
+                isAalChar -> "\u0D86" // ආ
+                outStr == "\u0DD0" -> "\u0D87" // ඇ
+                outStr == "\u0DD1" -> "\u0D88" // ඈ
                 else -> null
             }
             if (combined != null) {
