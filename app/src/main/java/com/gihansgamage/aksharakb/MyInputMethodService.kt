@@ -91,9 +91,9 @@ class MyInputMethodService : InputMethodService(),
         // H(3514)→ZWJ compound, J(3520)→ළු: handled in commitWijesekara
         3505 to 3499, 3482 to 3483, 3501 to 3502,
         // Row 3
-        3458 to 3459, 3490 to 3486, 3497 to 3498, 3465 to 3466,
+        3458 to 3459, 3490 to 3486, 3497 to 3498, 3465 to 3498,
         3510 to 3511, 3508 to 3509, 3517 to 3525, 3484 to 3485,
-        46   to 63,
+        46   to 3485,
         // Number row
         // Number row (removed from shift map to keep numbers as numbers)
     )
@@ -660,9 +660,9 @@ class MyInputMethodService : InputMethodService(),
         }
     }
 
-    private fun isSinhalaConsonantOrVirama(c: Char): Boolean {
+    private fun isSinhalaConsonant(c: Char): Boolean {
         val code = c.code
-        return (code in 0x0D9A..0x0DC6) || code == 0x0DCA
+        return (code in 0x0D9A..0x0DC6)
     }
 
     private fun commitWijesekara(code: Int, ic: android.view.inputmethod.InputConnection) {
@@ -691,13 +691,9 @@ class MyInputMethodService : InputMethodService(),
         val leftVowels = setOf('\u0DD9', '\u0DDA', '\u0DDB', '\u0DDC', '\u0DDD', '\u0DDE')
         val textBefore2 = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
         
-        // Mark fresh left-side vowel for reordering ONLY if it doesn't follow a consonant
+        // Mark fresh left-side vowel for reordering
         if (outStr.length == 1 && outStr[0] in leftVowels) {
-            val prevChar = if (textBefore2.isNotEmpty()) textBefore2.last() else '\u0000'
-            val isPrevConsonant = prevChar.code in 0x0D9A..0x0DC6
-            if (!isPrevConsonant) {
-                vowelAwaitingReorder = true
-            }
+            vowelAwaitingReorder = true
         }
 
         // Consolidated Smart Vowel Compositions (Shift-Aware)
@@ -765,6 +761,36 @@ class MyInputMethodService : InputMethodService(),
             
             afterWij(shifted); return
         }
+        // ෙ (0DD9) + ් (0DCA) -> ේ (0DDA)
+        if (isViramaChar) {
+            if (textBefore2.endsWith("\u0DD9")) { // Consonant + ෙ
+                ic.deleteSurroundingText(1, 0)
+                ic.commitText("\u0DDA", 1)
+                if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
+                    currentInput.deleteCharAt(currentInput.length - 1)
+                }
+                currentInput.append("\u0DDA")
+                updateCandidates(currentInput.toString())
+                val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
+                val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
+                vowelAwaitingReorder = !isBeforeConsonant
+                afterWij(shifted); return
+            } else if (textBefore2.length >= 2 && textBefore2[0] == '\u0DD9' && isSinhalaConsonant(textBefore2[1])) {
+                // ෙ + Consonant -> Consonant + ේ
+                val cons = textBefore2[1]
+                ic.deleteSurroundingText(2, 0)
+                ic.commitText(cons.toString() + "\u0DDA", 1)
+                if (currentInput.isNotEmpty() && currentInput.length >= 2 && currentInput[currentInput.length - 1] == cons && currentInput[currentInput.length - 2] == '\u0DD9') {
+                    currentInput.setLength(currentInput.length - 2)
+                    currentInput.append(cons).append("\u0DDA")
+                } else {
+                    currentInput.setLength(0); currentInput.append(ic.getTextBeforeCursor(20, 0))
+                }
+                updateCandidates(currentInput.toString())
+                vowelAwaitingReorder = false
+                afterWij(shifted); return
+            }
+        }
 
         // ෙ (0DD9) + ා (0DCF) -> ො (0DDC)
         if (isAalChar) {
@@ -780,13 +806,17 @@ class MyInputMethodService : InputMethodService(),
                 val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
                 vowelAwaitingReorder = !isBeforeConsonant
                 afterWij(shifted); return
-            } else if (textBefore2.length >= 2 && textBefore2[0] == '\u0DD9' && isSinhalaConsonantOrVirama(textBefore2[1])) {
+            } else if (textBefore2.length >= 2 && textBefore2[0] == '\u0DD9' && isSinhalaConsonant(textBefore2[1])) {
                 // ෙ + Consonant -> Consonant + ො
                 val cons = textBefore2[1]
                 ic.deleteSurroundingText(2, 0)
                 ic.commitText(cons.toString() + "\u0DDC", 1)
-                if (currentInput.length >= 2) currentInput.setLength(currentInput.length - 2)
-                currentInput.append(cons).append("\u0DDC")
+                if (currentInput.isNotEmpty() && currentInput.length >= 2 && currentInput[currentInput.length - 1] == cons && currentInput[currentInput.length - 2] == '\u0DD9') {
+                    currentInput.setLength(currentInput.length - 2)
+                    currentInput.append(cons).append("\u0DDC")
+                } else {
+                    currentInput.setLength(0); currentInput.append(ic.getTextBeforeCursor(20, 0))
+                }
                 updateCandidates(currentInput.toString())
                 vowelAwaitingReorder = false
                 afterWij(shifted); return
@@ -807,13 +837,17 @@ class MyInputMethodService : InputMethodService(),
             val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
             vowelAwaitingReorder = !isBeforeConsonant
             afterWij(shifted); return
-        } else if (isAalChar && textBefore2.length >= 2 && textBefore2[0] == '\u0DDA' && isSinhalaConsonantOrVirama(textBefore2[1])) {
+        } else if (isAalChar && textBefore2.length >= 2 && textBefore2[0] == '\u0DDA' && isSinhalaConsonant(textBefore2[1])) {
             // ේ + Consonant -> Consonant + ෝ
             val cons = textBefore2[1]
             ic.deleteSurroundingText(2, 0)
             ic.commitText(cons.toString() + "\u0DDD", 1)
-            if (currentInput.length >= 2) currentInput.setLength(currentInput.length - 2)
-            currentInput.append(cons).append("\u0DDD")
+            if (currentInput.isNotEmpty() && currentInput.length >= 2 && currentInput[currentInput.length - 1] == cons && currentInput[currentInput.length - 2] == '\u0DDA') {
+                currentInput.setLength(currentInput.length - 2)
+                currentInput.append(cons).append("\u0DDD")
+            } else {
+                currentInput.setLength(0); currentInput.append(ic.getTextBeforeCursor(20, 0))
+            }
             updateCandidates(currentInput.toString())
             vowelAwaitingReorder = false
             afterWij(shifted); return
@@ -833,13 +867,17 @@ class MyInputMethodService : InputMethodService(),
                 val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
                 vowelAwaitingReorder = !isBeforeConsonant
                 afterWij(shifted); return
-            } else if (textBefore2.length >= 2 && textBefore2[0] == '\u0DD9' && isSinhalaConsonantOrVirama(textBefore2[1])) {
+            } else if (textBefore2.length >= 2 && textBefore2[0] == '\u0DD9' && isSinhalaConsonant(textBefore2[1])) {
                 // ෙ + Consonant -> Consonant + ෞ
                 val cons = textBefore2[1]
                 ic.deleteSurroundingText(2, 0)
                 ic.commitText(cons.toString() + "\u0DDE", 1)
-                if (currentInput.length >= 2) currentInput.setLength(currentInput.length - 2)
-                currentInput.append(cons).append("\u0DDE")
+                if (currentInput.isNotEmpty() && currentInput.length >= 2 && currentInput[currentInput.length - 1] == cons && currentInput[currentInput.length - 2] == '\u0DD9') {
+                    currentInput.setLength(currentInput.length - 2)
+                    currentInput.append(cons).append("\u0DDE")
+                } else {
+                    currentInput.setLength(0); currentInput.append(ic.getTextBeforeCursor(20, 0))
+                }
                 updateCandidates(currentInput.toString())
                 vowelAwaitingReorder = false
                 afterWij(shifted); return

@@ -140,7 +140,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
             val disp = fixDottedCircle(ch)
             container.addView(android.widget.TextView(context).apply {
                 text      = disp
-                textSize  = 22f
+                textSize  = 24f
                 gravity   = android.view.Gravity.CENTER
                 setTextColor(txtColor)
                 layoutParams = android.widget.LinearLayout.LayoutParams(cellPx, cellPx)
@@ -478,7 +478,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                             lbl.length > 3 -> basePx * 0.56f
                             else           -> basePx * 0.76f
                         }
-                        val sy = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
+                        val sy = ky + kh * 0.5f - (textPaint.descent() + textPaint.ascent()) / 2f
                         canvas.drawText(lbl, kx + kw / 2f, sy, textPaint)
                     }
                 }
@@ -492,13 +492,13 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     var sz = when {
                         sv.length > 5 -> basePx * 0.46f
                         sv.length > 3 -> basePx * 0.60f
-                        sv.length > 1 -> basePx * 0.74f
-                        else          -> basePx
+                        sv.length > 1 -> basePx * 0.82f // Standardize 2-char
+                        else          -> basePx * 0.88f // Standardize 1-char size
                     }
                     textPaint.textSize = sz
                     val maxW = (ri - l) * 0.82f
                     if (textPaint.measureText(sv) > maxW) { sz *= maxW / textPaint.measureText(sv); textPaint.textSize = sz }
-                    val sy = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
+                    val sy = ky + kh * 0.5f - (textPaint.descent() + textPaint.ascent()) / 2f
                     canvas.drawText(sv, kx + kw / 2f, sy, textPaint)
                 }
                 else -> {
@@ -519,8 +519,8 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                         var sz = when {
                             rawLabel.length > 5 -> basePx * 0.46f
                             rawLabel.length > 3 -> basePx * 0.60f
-                            rawLabel.length > 1 -> basePx * 0.74f
-                            else                -> basePx
+                            rawLabel.length > 1 -> basePx * 0.82f // Standardize 2-char
+                            else                -> basePx * 0.88f // Standardize 1-char
                         }
                         textPaint.textSize = sz
                         val dispLabel = fixDottedCircle(rawLabel)
@@ -529,7 +529,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                             sz *= maxW / textPaint.measureText(dispLabel); textPaint.textSize = sz
                         }
                         // Main label always vertically centered
-                        val labelY = ky + kh * 0.54f - (textPaint.descent() + textPaint.ascent()) / 2f
+                        val labelY = ky + kh * 0.5f - (textPaint.descent() + textPaint.ascent()) / 2f
                         canvas.drawText(dispLabel, kx + kw / 2f, labelY, textPaint)
                     }
 
@@ -584,6 +584,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
             
             // Draw text
             previewPaint.color = t.textNorm
+            previewPaint.textSize = if (previewLabel.length > 1) dp(28f) else dp(34f)
             val ty = previewRect.centerY() - (previewPaint.descent() + previewPaint.ascent()) / 2f
             canvas.drawText(previewLabel, previewRect.centerX(), ty, previewPaint)
         }
