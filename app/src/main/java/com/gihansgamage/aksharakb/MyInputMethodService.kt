@@ -317,10 +317,10 @@ class MyInputMethodService : InputMethodService(),
 
         keyboardView?.setOnKeyboardActionListener(this)
 
-        // Long-press popup char selected — commit the char directly
+        // Long-press popup char selected — route through onText for reordering
         keyboardView?.onPopupCharSelected = { ch ->
             vibrateKey()
-            currentInputConnection?.commitText(ch, 1)
+            onText(ch)
         }
 
         // Blur behind is applied at window level in onWindowShown()
@@ -990,33 +990,46 @@ class MyInputMethodService : InputMethodService(),
 
     override fun onText(text: CharSequence?) {
         text ?: return
+        val tStr = text.toString()
         val ic = currentInputConnection ?: return
         val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
         val isWij = lang == KeyboardPreferences.LANG_SI &&
                 prefs?.sinhalaLayout == KeyboardPreferences.LAYOUT_WIJESEKARA
-        // Long-press ් then selecting "්‍" popup → set ZWSP mode
-        if (isWij && text.toString() == "්‍") { awaitingZWJ = true; return }
         
-        // Reordering for clusters like ්‍ර, ්‍ය
-        val tStr = text.toString()
-        if (isWij && tStr.startsWith("\u0DCA")) {
-            val textBefore = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+        // Long-press ් then selecting "්‍" popup → set ZWSP mode
+        if (isWij && tStr == "්‍") { awaitingZWJ = true; return }
+
+        // Reordering for clusters like ්‍ර, ්‍ය and other characters
+        if (isWij && tStr.isNotEmpty()) {
             val leftVowels = setOf('\u0DD9', '\u0DDA', '\u0DDB', '\u0DDC', '\u0DDD', '\u0DDE')
+            val textBefore = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+            
             if (textBefore.isNotEmpty() && textBefore.last() in leftVowels) {
-                val lastVowel = textBefore.last()
-                ic.deleteSurroundingText(1, 0)
-                ic.commitText(tStr + lastVowel, 1)
+                // If it starts with virama (cluster former) OR is a consonant
+                val firstCode = tStr[0].code
+                val isConsonant = firstCode in 0x0D9A..0x0DC6
+                val isClusterFormer = tStr.startsWith("\u0DCA")
                 
-                if (currentInput.isNotEmpty() && currentInput.last() == lastVowel) {
-                    currentInput.deleteCharAt(currentInput.length - 1)
+                if (isConsonant || isClusterFormer) {
+                    val lastVowel = textBefore.last()
+                    ic.deleteSurroundingText(1, 0)
+                    ic.commitText(tStr + lastVowel, 1)
+                    
+                    if (currentInput.isNotEmpty() && currentInput.last() == lastVowel) {
+                        currentInput.deleteCharAt(currentInput.length - 1)
+                    } else {
+                        currentInput.setLength(0); currentInput.append(ic.getTextBeforeCursor(20, 0))
+                    }
+                    currentInput.append(tStr).append(lastVowel)
+                    updateCandidates(currentInput.toString())
+                    vowelAwaitingReorder = false
+                    return
                 }
-                currentInput.append(tStr).append(lastVowel)
-                updateCandidates(currentInput.toString())
-                return
             }
         }
 
-        ic.commitText(text, 1); currentInput.append(text)
+        ic.commitText(text, 1)
+        currentInput.append(text)
         updateCandidates(currentInput.toString())
         isComposingWord = true
     }
