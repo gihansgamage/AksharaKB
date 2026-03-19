@@ -774,14 +774,14 @@ class MyInputMethodService : InputMethodService(),
             afterWij(shifted); return
         }
 
-        // උ (0D8D) + ෟ (0DDF) -> ඌ (0D8E)
-        if (textBefore2.endsWith("\u0D8D") && isGayanChar) {
+        // උ (0D8B) + ෟ (0DDF) -> ඌ (0D8C)
+        if (textBefore2.endsWith("\u0D8B") && (isGayanChar || outStr == "\u0DDF")) {
             ic.deleteSurroundingText(1, 0)
-            ic.commitText("\u0D8E", 1)
-            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D8D') {
+            ic.commitText("\u0D8C", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D8B') {
                 currentInput.deleteCharAt(currentInput.length - 1)
             }
-            currentInput.append("\u0D8E")
+            currentInput.append("\u0D8C")
             updateCandidates(currentInput.toString())
             vowelAwaitingReorder = false 
             afterWij(shifted); return
@@ -816,6 +816,7 @@ class MyInputMethodService : InputMethodService(),
 
         // ෙ (0DD9) + ් (0DCA) -> ේ (0DDA)
         if (textBefore2.endsWith("\u0DD9") && isViramaChar) {
+            val wasReordering = vowelAwaitingReorder
             ic.deleteSurroundingText(1, 0)
             ic.commitText("\u0DDA", 1)
             if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
@@ -823,30 +824,8 @@ class MyInputMethodService : InputMethodService(),
             }
             currentInput.append("\u0DDA")
             updateCandidates(currentInput.toString())
-            
-            val charBeforeVowel = if (textBefore2.length >= 2) textBefore2[textBefore2.length - 2] else '\u0000'
-            val isBeforeConsonant = charBeforeVowel.code in 0x0D9A..0x0DC6
-            vowelAwaitingReorder = !isBeforeConsonant
-            
+            vowelAwaitingReorder = wasReordering
             afterWij(shifted); return
-        }
-
-        // Logic for ෙ + ෙ moved above.
-        // ෙ (0DD9) + ් (0DCA) -> ේ (0DDA)
-        if (isViramaChar) {
-            if (textBefore2.endsWith("\u0DD9")) {
-                val wasReordering = vowelAwaitingReorder
-                ic.deleteSurroundingText(1, 0)
-                
-                ic.commitText("\u0DDA", 1)
-                if (currentInput.isNotEmpty() && currentInput.last() == '\u0DD9') {
-                    currentInput.deleteCharAt(currentInput.length - 1)
-                }
-                currentInput.append("\u0DDA")
-                updateCandidates(currentInput.toString())
-                vowelAwaitingReorder = wasReordering
-                afterWij(shifted); return
-            }
         }
 
         // ෙ (0DD9) + ා (0DCF) -> ො (0DDC)
