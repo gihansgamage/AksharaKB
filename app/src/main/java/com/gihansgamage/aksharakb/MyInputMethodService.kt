@@ -27,6 +27,7 @@ class MyInputMethodService : InputMethodService(),
     private var candidatesScroll: HorizontalScrollView? = null
     private var langPillsContainer: LinearLayout? = null
     private var emojiPanel: android.view.ViewGroup? = null
+    private var emojiCategoryBar: android.view.View? = null
     private var emojiTabs: LinearLayout? = null
     private var emojiGrid: android.widget.LinearLayout? = null
     private var emojiScrollView: android.widget.ScrollView? = null
@@ -192,6 +193,10 @@ class MyInputMethodService : InputMethodService(),
     override fun onWindowShown() {
         super.onWindowShown()
         window?.window?.let { w ->
+            // Enforce hardware acceleration for blur to work reliably
+            w.addFlags(android.view.WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
+            w.clearFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            
             w.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 try {
@@ -226,7 +231,7 @@ class MyInputMethodService : InputMethodService(),
         val emojiRes = if (isDark()) R.drawable.emoji_panel_bg_dark
                        else          R.drawable.emoji_panel_bg_light
         root?.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
-        root?.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(emojiRes)
+        root?.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(0)
         root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         
         // Root keyboard container: apply glass-like tint (low opacity)
@@ -254,7 +259,7 @@ class MyInputMethodService : InputMethodService(),
         val emojiRes = if (isDark()) R.drawable.emoji_panel_bg_dark
                        else          R.drawable.emoji_panel_bg_light
         v.findViewById<android.view.View>(R.id.candidate_bar)?.setBackgroundResource(glassRes)
-        v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(emojiRes)
+        v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(0)
         v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         // Root keyboard container: apply glass-like tint (low opacity)
         val bgCol = if (isDark()) 0x331A1A1A.toInt() else 0x44EEEEEE.toInt()
@@ -275,6 +280,7 @@ class MyInputMethodService : InputMethodService(),
         candidatesScroll    = v.findViewById(R.id.candidates_view)
         langPillsContainer  = v.findViewById(R.id.lang_pills_container)
         emojiPanel          = v.findViewById(R.id.emoji_panel)
+        emojiCategoryBar    = v.findViewById(R.id.emoji_category_bar)
         emojiTabs           = v.findViewById(R.id.emoji_tabs)
         emojiGrid           = v.findViewById(R.id.emoji_grid)
         emojiScrollView     = v.findViewById(R.id.emoji_scroll)
@@ -478,14 +484,16 @@ class MyInputMethodService : InputMethodService(),
         val grid   = emojiGrid   ?: return
         val scroll = emojiScrollView ?: return
         val dark   = isDark()
-        val glassColor = if (dark) 0x88252836.toInt() else 0x99FFFFFF.toInt()
-        val tabBg  = if (dark) 0x44FFFFFF else 0x44000000
-        val rowBg  = if (dark) 0x44252836.toInt() else 0x55FFFFFF.toInt()
+        val glassColor = if (dark) 0x221A1A1A.toInt() else 0x26FFFFFF.toInt()
+        val tabBg  = if (dark) 0x22FFFFFF else 0x22000000
+        val rowBg  = if (dark) 0x111A1A1A.toInt() else 0x11FFFFFF.toInt()
         val textCol = if (dark) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
-        val actionBg = glassColor
+        val actionBg = if (dark) 0x221A1A1A.toInt() else 0x26FFFFFF.toInt()
 
-        // Emoji panel gracefully inherits candidate_bar_glass theme from onCreate/onStart.
-        // Removed hardcoded background overrides to perfectly match candidate bar.
+        // Sync pill-shaped category bar background with theme
+        emojiCategoryBar?.setBackgroundResource(if (dark) R.drawable.category_bar_bg_dark else R.drawable.category_bar_bg_light)
+        // Ensure main panel remains transparent for liquid glass effect
+        emojiPanel?.setBackgroundResource(0)
 
         // ── Category tabs ──────────────────────────────────────────
         tabs.removeAllViews()
@@ -563,7 +571,7 @@ class MyInputMethodService : InputMethodService(),
         bar.removeAllViews()
         val dark     = isDark()
         val textCol  = if (dark) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
-        val actionBg = if (dark) 0x33FFFFFF else 0x22000000 // subtle translucent buttons
+        val actionBg = if (dark) 0x1AFFFFFF else 0x1A000000 // subtle translucent buttons
 
         fun actionKey(label: String, weight: Float, onClick: () -> Unit) =
             android.widget.TextView(this).apply {
@@ -633,10 +641,20 @@ class MyInputMethodService : InputMethodService(),
                     phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1)
                     tryPhoneticConvert(lang)
                 } else {
-                    ic.deleteSurroundingText(1, 0)
+                    // Use sendKeyEvent for reliable emoji/complex character deletion
+                    ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
+                    ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
                     lastPhoneticCommitLen = 0
                 }
-                if (currentInput.isNotEmpty()) currentInput.deleteCharAt(currentInput.length - 1)
+                // Sync internal currentInput buffer
+                if (currentInput.isNotEmpty()) {
+                    val lastChar = currentInput.last()
+                    if (Character.isLowSurrogate(lastChar) && currentInput.length > 1 && Character.isHighSurrogate(currentInput[currentInput.length - 2])) {
+                        currentInput.delete(currentInput.length - 2, currentInput.length)
+                    } else {
+                        currentInput.deleteCharAt(currentInput.length - 1)
+                    }
+                }
                 updateCandidates(currentInput.toString())
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
             }
@@ -1119,7 +1137,7 @@ class MyInputMethodService : InputMethodService(),
         }
 
         if (lang == KeyboardPreferences.LANG_TA) {
-            // Tamil: use existing logic but with lastPhoneticCommitLen
+            // Tamil: greedy-ish logic
             for (len in minOf(3, buf.length) downTo 1) {
                 val s = buf.takeLast(len)
                 val m = tamilPhoneticMap.firstOrNull { it.first == s } ?: continue
@@ -1127,63 +1145,41 @@ class MyInputMethodService : InputMethodService(),
                 ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
                 ic.commitText(m.second, 1)
                 lastPhoneticCommitLen = m.second.length
-                // For Tamil, we currently clear buffer after match for simplicity as per original flow
                 repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
                 currentInput.append(m.second)
                 updateCandidates(currentInput.toString())
                 return
             }
         } else {
+            // Sinhala: Greedy Longest-Sequence Matching
             val ic = currentInputConnection ?: return
-
-            // ── Phase 1: Context-aware vowel attachment ──────────────────
-            // If the buffer looks like a vowel sign, check if the last char is HAL.
-            val textBefore = ic.getTextBeforeCursor(1, 0)?.toString() ?: ""
-            if (textBefore.endsWith('\u0DCA')) {
-                val vowelMatch = SinhalaPhonetic.tryGetVowelSign(buf)
-                if (vowelMatch != null) {
-                    val (consumed, sign) = vowelMatch
-                    ic.deleteSurroundingText(1, 0) // delete the HAL
-                    ic.commitText(sign, 1)
-                    lastPhoneticCommitLen = lastPhoneticCommitLen - 1 + sign.length
-                    
-                    // A vowel sign usually completes a syllable, so we clear the buffer for matched chars
-                    val remaining = buf.substring(consumed)
-                    phoneticBuffer.setLength(0)
-                    phoneticBuffer.append(remaining)
-                    
-                    // We don't return here if there's remaining buffer, but usually vowel completes it.
-                    if (remaining.isEmpty()) {
-                        lastPhoneticCommitLen = 0 // Syllable done
-                        updateCandidates(currentInput.toString())
-                        return
-                    }
-                }
-            }
-
-            // ── Phase 2: Normal syllable conversion ──────────────────────
             val match = SinhalaPhonetic.tryConvert(buf)
+            
             if (match != null) {
                 val (consumed, sinhala) = match
-                ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
-                ic.commitText(sinhala, 1)
-                lastPhoneticCommitLen = sinhala.length
                 
-                // If it's a complete syllable (ends with a vowel sign or it's a standalone vowel), clear buffer
-                // In our SinhalaPhonetic engine, consonants end with HAL by default if no vowel follows.
-                if (!sinhala.endsWith('\u0DCA')) {
-                    // It's a full syllable or vowel. Clear matched part.
-                    val remaining = buf.substring(consumed)
+                // CASE 1: Greedy match (consumes ENTIRE buffer)
+                // e.g. 'm' -> 'ma' -> 'maa'. We just update the current commit.
+                if (consumed == buf.length) {
+                    ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
+                    ic.commitText(sinhala, 1)
+                    lastPhoneticCommitLen = sinhala.length
+                    // DO NOT clear buffer, it might be extended (aa -> aaa, etc.)
+                } 
+                // CASE 2: Syllable break (only consumes the TAIL of the buffer)
+                // e.g. 'maa' (මා) followed by 'k' -> 'maak' matches 'k' (ක්)
+                else {
+                    // Current match is a new syllable. Commit it.
+                    ic.commitText(sinhala, 1)
+                    lastPhoneticCommitLen = sinhala.length
+                    
+                    // Reset buffer to only include the new syllable's chars
+                    val remaining = buf.takeLast(consumed)
                     phoneticBuffer.setLength(0)
                     phoneticBuffer.append(remaining)
-                    if (remaining.isEmpty()) {
-                        lastPhoneticCommitLen = 0 // Syllable done
-                    }
                 }
-                updateCandidates(currentInput.toString())
-                return
             } else {
-                // No match yet. Show the English characters so user knows what's happening.
+                // No match yet. Show original characters to user.
                 ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
                 ic.commitText(buf, 1)
                 lastPhoneticCommitLen = buf.length

@@ -475,6 +475,7 @@ class MyKeyboardView(context: Context, attrs: AttributeSet) : KeyboardView(conte
                     if (lbl.isNotEmpty()) {
                         textPaint.color    = if (active) t.textActive else t.textSpec
                         textPaint.textSize = when {
+                            lbl == "⇧" || lbl == "↵" || lbl == "⌫" -> basePx * 1.0f
                             lbl.length > 3 -> basePx * 0.56f
                             else           -> basePx * 0.76f
                         }

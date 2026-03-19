@@ -10,7 +10,8 @@
 
     <!-- ── DARK theme (default) ──────────────────────────────────── -->
     <style name="Theme.AksharaKB" parent="Theme.AksharaKB.Base">
-        <item name="android:windowBackground">@color/dark_bg</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
         <item name="android:statusBarColor">@color/dark_bg</item>
         <item name="android:navigationBarColor">@color/dark_bg</item>
         <item name="android:textColorPrimary">@color/dark_text_primary</item>
@@ -19,7 +20,8 @@
 
     <!-- ── LIGHT theme ───────────────────────────────────────────── -->
     <style name="Theme.AksharaKB.Light" parent="Theme.AksharaKB.Base">
-        <item name="android:windowBackground">@color/light_bg</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
         <item name="android:statusBarColor">@color/light_bg</item>
         <item name="android:navigationBarColor">@color/light_bg</item>
         <item name="android:textColorPrimary">@color/light_text_primary</item>
