@@ -451,6 +451,20 @@ class MyInputMethodService : InputMethodService(),
         keyboardView?.keyboard = keyboard
         keyboardView?.shiftMap = wijShiftMap   // for correct shifted-label rendering
         keyboard?.isShifted = (capsState != CapsState.NONE)
+        
+        // Dynamic label for symbols mode change key (?123 key) back to letters
+        if (isSymbols) {
+            val label = when (lang) {
+                KeyboardPreferences.LANG_SI -> "සිං"
+                KeyboardPreferences.LANG_TA -> "தமி"
+                else -> "ABC"
+            }
+            keyboard?.keys?.forEach { key ->
+                if (key.codes?.contains(-2) == true) {
+                    key.label = label
+                }
+            }
+        }
 
         // For emoji keyboard: populate emoji labels into the keyboard keys
         if (isEmoji) {
@@ -740,7 +754,7 @@ class MyInputMethodService : InputMethodService(),
         val isGayanChar  = (outStr == "\u0DDF") // Shift+A
 
         // ෙ (0DD9) + ෙ (0DD9) -> ෛ (0DDB)
-        if (textBefore2.endsWith("\u0DD9") && isKombu2Char) {
+        if (textBefore2.endsWith("\u0DD9") && isKombu2Char && vowelAwaitingReorder) {
             val wasReordering = vowelAwaitingReorder
             ic.deleteSurroundingText(1, 0)
             
@@ -832,7 +846,7 @@ class MyInputMethodService : InputMethodService(),
         }
 
         // ෙ (0DD9) + එ (0D91) -> ඓ (0D93) [Visual Order]
-        if (textBefore2.endsWith("\u0DD9") && outStr == "\u0D91") {
+        if (textBefore2.endsWith("\u0DD9") && outStr == "\u0D91" && vowelAwaitingReorder) {
             ic.deleteSurroundingText(1, 0)
             
             ic.commitText("\u0D93", 1)
