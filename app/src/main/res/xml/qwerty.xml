@@ -34,6 +34,7 @@
     </Row>
 
     <!-- ASDF row (9 keys centred) -->
+
     <Row>
         <Key android:codes="97"  android:keyLabel="a" android:popupCharacters="A" android:horizontalGap="5%p" android:keyEdgeFlags="left"/>
         <Key android:codes="115" android:keyLabel="s" android:popupCharacters="S"/>
