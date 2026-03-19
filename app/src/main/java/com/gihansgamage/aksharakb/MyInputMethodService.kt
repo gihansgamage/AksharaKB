@@ -235,7 +235,7 @@ class MyInputMethodService : InputMethodService(),
         root?.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         
         // Root keyboard container: apply glass-like tint (low opacity)
-        val bgCol = if (isDark()) 0x331A1A1A.toInt() else 0x44EEEEEE.toInt()
+        val bgCol = if (isDark()) 0x141A1A1A.toInt() else 0x1AEEEEEE.toInt()
         root?.setBackgroundColor(bgCol)
         
         // Dynamically update emoji and settings icon colors based on theme
@@ -262,7 +262,7 @@ class MyInputMethodService : InputMethodService(),
         v.findViewById<android.view.View>(R.id.emoji_panel)?.setBackgroundResource(0)
         v.findViewById<android.view.View>(R.id.keyboard_panel)?.setBackgroundResource(0)
         // Root keyboard container: apply glass-like tint (low opacity)
-        val bgCol = if (isDark()) 0x331A1A1A.toInt() else 0x44EEEEEE.toInt()
+        val bgCol = if (isDark()) 0x141A1A1A.toInt() else 0x1AEEEEEE.toInt()
         v.setBackgroundColor(bgCol)
         updateLangIcon(v)
         keyboardView        = v.findViewById(R.id.keyboard_view)
