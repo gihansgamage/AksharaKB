@@ -708,6 +708,12 @@ class MyInputMethodService : InputMethodService(),
                 }
             }
         }
+        
+        // Map backtick (`) to Rakaaraansaya (්‍ර) and tilde (~) to Yansaya (්‍ය) for Wijesekara
+        if (!isNumberKey) {
+            if (code == 96) { outStr = "\u0DCA\u200D\u0DBB"; vowelAwaitingReorder = false }
+            else if (code == 126) { outStr = "\u0DCA\u200D\u0DBA"; vowelAwaitingReorder = false }
+        }
 
         // Consolidated Smart Vowel Compositions (Shift-Aware)
         val isViramaChar = (outStr == "\u0DCA") // A key (unshifted)
@@ -763,6 +769,19 @@ class MyInputMethodService : InputMethodService(),
                 currentInput.deleteCharAt(currentInput.length - 1)
             }
             currentInput.append("\u0D96")
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false 
+            afterWij(shifted); return
+        }
+
+        // උ (0D8D) + ෟ (0DDF) -> ඌ (0D8E)
+        if (textBefore2.endsWith("\u0D8D") && isGayanChar) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0D8E", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D8D') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0D8E")
             updateCandidates(currentInput.toString())
             vowelAwaitingReorder = false 
             afterWij(shifted); return
@@ -942,18 +961,19 @@ class MyInputMethodService : InputMethodService(),
             }
         }
 
-        // A vowel is reorderable if vowelAwaitingReorder is true and outStr is a consonant or cluster former.
+        // Enhanced reordering for Clusters and Consonants
         val firstChar = outStr.firstOrNull() ?: '\u0000'
         val isConsonant = firstChar.code in 0x0D9A..0x0DC6
         val isClusterFormer = outStr.startsWith("\u0DCA")
         
-        if (vowelAwaitingReorder && (isConsonant || isClusterFormer) && textBefore2.isNotEmpty() && textBefore2.last() in leftVowels) {
+        // Reorder if we have a left-side vowel (including composed ones like ේ, ො, ෝ)
+        if ((vowelAwaitingReorder || (isClusterFormer && textBefore2.isNotEmpty() && textBefore2.last() in leftVowels)) && 
+            (isConsonant || isClusterFormer) && textBefore2.isNotEmpty() && textBefore2.last() in leftVowels) {
+            
             val lastVowel = textBefore2.last()
             ic.deleteSurroundingText(1, 0)
-            
             ic.commitText(outStr + lastVowel, 1)
             
-            // Fix currentInput sync
             if (currentInput.isNotEmpty() && currentInput.last() == lastVowel) {
                 currentInput.deleteCharAt(currentInput.length - 1)
             }
@@ -1007,6 +1027,7 @@ class MyInputMethodService : InputMethodService(),
                 val lastVowel = textBefore.last()
                 ic.deleteSurroundingText(1, 0)
                 ic.commitText(tStr + lastVowel, 1)
+                
                 if (currentInput.isNotEmpty() && currentInput.last() == lastVowel) {
                     currentInput.deleteCharAt(currentInput.length - 1)
                 }
