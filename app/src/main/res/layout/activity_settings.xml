@@ -62,12 +62,18 @@
                         <RadioButton
                             android:id="@+id/rbThemeLight"
                             style="@style/GlassRadio"
-                            android:text="☀  Light"/>
+                            android:text="  Light Mode"
+                            android:drawableStart="@drawable/ic_light_mode"
+                            android:drawablePadding="12dp"
+                            android:paddingStart="12dp"/>
                         <View style="@style/Divider"/>
                         <RadioButton
                             android:id="@+id/rbThemeDark"
                             style="@style/GlassRadio"
-                            android:text="◑  Dark"/>
+                            android:text="  Dark Mode"
+                            android:drawableStart="@drawable/ic_dark_mode"
+                            android:drawablePadding="12dp"
+                            android:paddingStart="12dp"/>
 
                     </RadioGroup>
                 </LinearLayout>
@@ -120,19 +126,6 @@
 
                     <LinearLayout style="@style/RowLayout">
                         <LinearLayout style="@style/RowText">
-                            <TextView style="@style/RowTitle" android:text="Show Key Borders"/>
-                            <TextView style="@style/RowSubtitle" android:text="Outline around each key"/>
-                        </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/swBorder"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <View style="@style/Divider"/>
-
-                    <LinearLayout style="@style/RowLayout">
-                        <LinearLayout style="@style/RowText">
                             <TextView style="@style/RowTitle" android:text="Number Row"/>
                             <TextView style="@style/RowSubtitle" android:text="Show 1–0 row at top of keyboard"/>
                         </LinearLayout>
@@ -140,45 +133,6 @@
                             android:id="@+id/swNumberPad"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <View style="@style/Divider"/>
-
-                    <!-- Key Height -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="4dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginBottom="10dp">
-                            <TextView style="@style/RowTitle"
-                                android:layout_width="0dp"
-                                android:layout_weight="1"
-                                android:text="Key Height"/>
-                            <TextView
-                                android:id="@+id/tvKeyHeightValue"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="52dp"
-                                android:textSize="13sp"
-                                android:textColor="#AAFFFFFF"/>
-                        </LinearLayout>
-
-                        <SeekBar
-                            android:id="@+id/seekKeyHeight"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:max="30"
-                            android:progress="12"
-                            android:progressTint="#FFFFFF"
-                            android:thumbTint="#FFFFFF"/>
                     </LinearLayout>
 
                 </LinearLayout>
@@ -189,30 +143,6 @@
 
             <androidx.cardview.widget.CardView style="@style/GlassCard">
                 <LinearLayout style="@style/CardInner">
-
-                    <LinearLayout style="@style/RowLayout">
-                        <LinearLayout style="@style/RowText">
-                            <TextView style="@style/RowTitle" android:text="Vibrate on Keypress"/>
-                        </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/swVibrate"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <View style="@style/Divider"/>
-
-                    <LinearLayout style="@style/RowLayout">
-                        <LinearLayout style="@style/RowText">
-                            <TextView style="@style/RowTitle" android:text="Sound on Keypress"/>
-                        </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/swSound"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
-
-                    <View style="@style/Divider"/>
 
                     <LinearLayout style="@style/RowLayout">
                         <LinearLayout style="@style/RowText">

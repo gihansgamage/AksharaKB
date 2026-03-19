@@ -193,12 +193,32 @@
             android:id="@+id/btnOpenSettings"
             android:layout_width="match_parent"
             android:layout_height="54dp"
-            android:text="⚙️  Keyboard Settings"
+            android:text="Keyboard Settings"
             android:textAllCaps="false"
             android:textSize="16sp"
             android:textColor="#FFFFFF"
             android:background="@drawable/btn_primary"
+            android:drawableStart="@drawable/ic_settings_gear"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:drawablePadding="12dp"
             android:layout_marginTop="6dp"
+            android:stateListAnimator="@null"/>
+
+        <Button
+            android:id="@+id/btnUserGuide"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="Phonetic User Guide"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/btn_glass_outline"
+            android:drawableStart="@drawable/ic_book"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:drawablePadding="12dp"
+            android:layout_marginTop="12dp"
             android:layout_marginBottom="28dp"
             android:stateListAnimator="@null"/>
 
@@ -206,9 +226,7 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#18FFFFFF">
+            style="@style/GlassCard">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -219,19 +237,57 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Features"
+                    android:text="Key Features"
                     android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="#FFFFFF"
-                    android:layout_marginBottom="14dp"/>
+                    android:layout_marginBottom="16dp"/>
 
-                <TextView
+                <GridLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="⌨️  Sinhala Phonetic &amp; Wijesekara\n🔤  Tamil full layout\n🌐  English QWERTY\n🔄  Single key to cycle languages\n🔮  Word prediction &amp; emoji\n📋  Clipboard history\n🎨  Custom themes &amp; background\n📏  Adjustable key height\n📳  Haptic feedback"
-                    android:textSize="14sp"
-                    android:textColor="#DDFFFFFF"
-                    android:lineSpacingExtra="7dp"/>
+                    android:columnCount="2"
+                    android:alignmentMode="alignMargins"
+                    android:columnOrderPreserved="false"
+                    android:useDefaultMargins="true">
+
+                    <!-- Phonetic & Wijesekara -->
+                    <LinearLayout android:layout_width="0dp" android:layout_gravity="fill_horizontal" android:layout_columnWeight="1" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_keyboard" app:tint="#AAFFFFFF"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Phonetic &amp; Wij" android:textSize="13sp" android:textColor="#DDFFFFFF" android:layout_marginStart="8dp"/>
+                    </LinearLayout>
+
+                    <!-- Tamil -->
+                    <LinearLayout android:layout_width="0dp" android:layout_gravity="fill_horizontal" android:layout_columnWeight="1" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_language_alt" app:tint="#AAFFFFFF"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tamil Layout" android:textSize="13sp" android:textColor="#DDFFFFFF" android:layout_marginStart="8dp"/>
+                    </LinearLayout>
+
+                    <!-- English -->
+                    <LinearLayout android:layout_width="0dp" android:layout_gravity="fill_horizontal" android:layout_columnWeight="1" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_globe" app:tint="#AAFFFFFF"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="English QWERTY" android:textSize="13sp" android:textColor="#DDFFFFFF" android:layout_marginStart="8dp"/>
+                    </LinearLayout>
+
+                    <!-- Predictions -->
+                    <LinearLayout android:layout_width="0dp" android:layout_gravity="fill_horizontal" android:layout_columnWeight="1" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_magic" app:tint="#AAFFFFFF"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Word Prediction" android:textSize="13sp" android:textColor="#DDFFFFFF" android:layout_marginStart="8dp"/>
+                    </LinearLayout>
+
+                    <!-- Themes -->
+                    <LinearLayout android:layout_width="0dp" android:layout_gravity="fill_horizontal" android:layout_columnWeight="1" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_theme" app:tint="#AAFFFFFF"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Custom Themes" android:textSize="13sp" android:textColor="#DDFFFFFF" android:layout_marginStart="8dp"/>
+                    </LinearLayout>
+
+                    <!-- Clipboard -->
+                    <LinearLayout android:layout_width="0dp" android:layout_gravity="fill_horizontal" android:layout_columnWeight="1" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="12dp">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_clipboard" app:tint="#AAFFFFFF"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Clipboard Hist" android:textSize="13sp" android:textColor="#DDFFFFFF" android:layout_marginStart="8dp"/>
+                    </LinearLayout>
+
+                </GridLayout>
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>

@@ -678,7 +678,7 @@ class MyInputMethodService : InputMethodService(),
             // KEYCODE_MODE_CHANGE handled above in emoji section
             Keyboard.KEYCODE_DONE -> {
                 isComposingWord = false
-                awaitingZWJ = false; vowelAwaitingReorder = false; phoneticBuffer.clear()
+                awaitingZWJ = false; vowelAwaitingReorder = false; phoneticBuffer.clear(); lastPhoneticCommitLen = 0
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP,   KeyEvent.KEYCODE_ENTER))
                 learnAndReset()
@@ -1063,17 +1063,25 @@ class MyInputMethodService : InputMethodService(),
         currentInput.append(text)
         updateCandidates(currentInput.toString())
         isComposingWord = true
+        phoneticBuffer.clear(); lastPhoneticCommitLen = 0
     }
 
     private fun handlePhonetic(code: Int, ic: android.view.inputmethod.InputConnection, lang: String) {
-        val ch = code.toChar()
+        var ch = code.toChar()
         if (ch.isLetter()) {
-            phoneticBuffer.append(ch.lowercaseChar())
+            if (capsState != CapsState.NONE) ch = ch.uppercaseChar()
+            phoneticBuffer.append(ch)
             tryPhoneticConvert(lang)
-        } else { 
+
+            if (capsState == CapsState.SHIFT) {
+                capsState = CapsState.NONE
+                keyboard?.isShifted = false
+                keyboardView?.invalidateAllKeys()
+            }
+        } else {
             phoneticBuffer.clear()
             lastPhoneticCommitLen = 0
-            ic.commitText(ch.toString(), 1) 
+            ic.commitText(ch.toString(), 1)
         }
     }
 
@@ -1307,6 +1315,7 @@ class MyInputMethodService : InputMethodService(),
         isComposingWord = false
         if (currentInput.isNotEmpty()) { wordPredictor?.learnWord(currentInput.toString()); clipboard?.save(currentInput.toString()) }
         currentInput.clear(); updateCandidates("")
+        phoneticBuffer.clear(); lastPhoneticCommitLen = 0
     }
 
     private fun vibrateKey() {

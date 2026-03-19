@@ -2,9 +2,9 @@
 <!-- Dark theme app background — deep blue-black gradient -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <gradient
-        android:startColor="#0D0F1A"
-        android:centerColor="#11141F"
-        android:endColor="#0A0C15"
-        android:angle="160"
+        android:startColor="#1A1C2E"
+        android:centerColor="#0F111A"
+        android:endColor="#080A12"
+        android:angle="135"
         android:type="linear"/>
 </shape>

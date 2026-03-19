@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnOpenSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
+        binding.btnUserGuide.setOnClickListener {
+            startActivity(Intent(this, UserGuideActivity::class.java))
+        }
     }
 
     private fun updateStatus() {

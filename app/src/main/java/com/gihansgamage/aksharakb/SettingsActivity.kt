@@ -46,12 +46,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.cbLangEn.isChecked = KeyboardPreferences.LANG_EN in langs
         binding.cbLangSi.isChecked = KeyboardPreferences.LANG_SI in langs
         binding.cbLangTa.isChecked = KeyboardPreferences.LANG_TA in langs
-        binding.swBorder.isChecked    = prefs.showBorder
         binding.swNumberPad.isChecked = prefs.showNumberPad
-        binding.seekKeyHeight.progress = prefs.keyHeight - 40
-        binding.tvKeyHeightValue.text  = "${prefs.keyHeight}dp"
-        binding.swVibrate.isChecked     = prefs.vibrateOnKey
-        binding.swSound.isChecked       = prefs.soundOnKey
         binding.swPredictions.isChecked = prefs.showPredictions
         binding.swPopupKeys.isChecked   = prefs.showPopupKeys
     }
@@ -85,20 +80,8 @@ class SettingsActivity : AppCompatActivity() {
         binding.cbLangSi.setOnCheckedChangeListener { _, _ -> saveLangs() }
         binding.cbLangTa.setOnCheckedChangeListener { _, _ -> saveLangs() }
 
-        binding.swBorder.setOnCheckedChangeListener    { _, v -> prefs.showBorder    = v }
         binding.swNumberPad.setOnCheckedChangeListener { _, v -> prefs.showNumberPad = v }
-
-        binding.seekKeyHeight.setOnSeekBarChangeListener(
-            object : android.widget.SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(sb: android.widget.SeekBar?, p: Int, fromUser: Boolean) {
-                    val h = p + 40; prefs.keyHeight = h; binding.tvKeyHeightValue.text = "${h}dp"
-                }
-                override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-                override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-            })
-
-        binding.swVibrate.setOnCheckedChangeListener     { _, v -> prefs.vibrateOnKey    = v }
-        binding.swSound.setOnCheckedChangeListener       { _, v -> prefs.soundOnKey      = v }
+        binding.swPredictions.isChecked = prefs.showPredictions
         binding.swPredictions.setOnCheckedChangeListener { _, v -> prefs.showPredictions = v }
         binding.swPopupKeys.setOnCheckedChangeListener   { _, v -> prefs.showPopupKeys   = v }
     }

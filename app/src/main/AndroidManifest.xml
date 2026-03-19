@@ -31,6 +31,11 @@
             android:exported="true"
             android:label="@string/settings_title"/>
 
+        <activity
+            android:name=".UserGuideActivity"
+            android:exported="true"
+            android:label="User Guide"/>
+
         <service
             android:name=".MyInputMethodService"
             android:permission="android.permission.BIND_INPUT_METHOD"
