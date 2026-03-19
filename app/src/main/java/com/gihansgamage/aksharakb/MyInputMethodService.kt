@@ -93,9 +93,9 @@ class MyInputMethodService : InputMethodService(),
         // H(3514)→ZWJ compound, J(3520)→ළු: handled in commitWijesekara
         3505 to 3499, 3482 to 3483, 3501 to 3502,
         // Row 3
-        3458 to 3459, 3490 to 3486, 3497 to 3498, 3465 to 3498,
+        3458 to 3459, 3490 to 3491, 3497 to 3498, 3465 to 3466,
         3510 to 3511, 3508 to 3509, 3517 to 3525, 3484 to 3485,
-        46   to 3485,
+        46   to 63,
         // Number row
         // Number row (removed from shift map to keep numbers as numbers)
     )
@@ -774,6 +774,19 @@ class MyInputMethodService : InputMethodService(),
                 currentInput.deleteCharAt(currentInput.length - 1)
             }
             currentInput.append("\u0D95")
+            updateCandidates(currentInput.toString())
+            vowelAwaitingReorder = false
+            afterWij(shifted); return
+        }
+
+        // එ (0D91) + ් (0DCA) -> ඒ (0D92)
+        if (textBefore2.endsWith("\u0D91") && isViramaChar) {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("\u0D92", 1)
+            if (currentInput.isNotEmpty() && currentInput.last() == '\u0D91') {
+                currentInput.deleteCharAt(currentInput.length - 1)
+            }
+            currentInput.append("\u0D92")
             updateCandidates(currentInput.toString())
             vowelAwaitingReorder = false
             afterWij(shifted); return
