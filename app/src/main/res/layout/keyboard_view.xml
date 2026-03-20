@@ -128,8 +128,7 @@
             android:keyTextColor="#00000000"
             android:keyBackground="@android:color/transparent"
             android:shadowColor="#00000000"
-            android:shadowRadius="0"
-            android:paddingBottom="8dp"/>
+            android:shadowRadius="0"/>
 
         <!-- Emoji panel — same height as keyboard, hidden by default -->
         <LinearLayout

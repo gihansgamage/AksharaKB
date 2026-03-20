@@ -459,11 +459,19 @@ class MyInputMethodService : InputMethodService(),
 
         // For emoji keyboard: populate emoji labels into the keyboard keys
         if (isEmoji) {
-            keyboardView?.visibility = android.view.View.INVISIBLE
+            keyboardView?.visibility = android.view.View.GONE
             emojiPanel?.visibility   = android.view.View.VISIBLE
             keyboardView?.isEmojiMode = false
-            // Set emoji panel height = keyboard height so it never overflows
-            val kbHeight = keyboardView?.measuredHeight ?: 0
+            
+            // Set emoji panel height = keyboard height so it never overflows.
+            // If height is 0 (e.g. first show), try to measure it.
+            var kbHeight = keyboardView?.height ?: 0
+            if (kbHeight == 0) {
+                keyboardView?.measure(android.view.View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.widthPixels, android.view.View.MeasureSpec.EXACTLY),
+                                     android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED))
+                kbHeight = keyboardView?.measuredHeight ?: 0
+            }
+
             if (kbHeight > 0) {
                 emojiPanel?.layoutParams = (emojiPanel?.layoutParams
                         as? android.view.ViewGroup.LayoutParams)?.also {
@@ -576,7 +584,8 @@ class MyInputMethodService : InputMethodService(),
         bar.removeAllViews()
         val dark     = isDark()
         val textCol  = if (dark) 0xFFFFFFFF.toInt() else 0xFF111111.toInt()
-        val actionBg = if (dark) 0x1AFFFFFF else 0x1A000000 // subtle translucent buttons
+        val actionBg = if (dark) 0x66404040.toInt() else 0x77FFFFFF.toInt()
+        val strokeCol = if (dark) 0x22FFFFFF else 0x33000000
 
         fun actionKey(label: String, weight: Float, onClick: () -> Unit) =
             android.widget.TextView(this).apply {
@@ -586,8 +595,9 @@ class MyInputMethodService : InputMethodService(),
                 setTextColor(textCol)
                 background = android.graphics.drawable.GradientDrawable().apply {
                     shape        = android.graphics.drawable.GradientDrawable.RECTANGLE
-                    cornerRadius = dp(10f)
+                    cornerRadius = dp(11f)
                     setColor(actionBg)
+                    setStroke(dp(0.7f).toInt(), strokeCol)
                 }
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, weight)
                     .also { it.setMargins(dp(3f).toInt(), dp(3f).toInt(), dp(3f).toInt(), dp(3f).toInt()) }
