@@ -1,14 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Base Color -->
-    <item>
+    <!-- 1. Outer Soft Shadow -->
+    <item android:top="4dp" android:bottom="-4dp" android:left="1dp" android:right="1dp">
         <shape android:shape="rectangle">
-            <solid android:color="#66404040"/>
-            <stroke android:width="0.7dp" android:color="#2AFFFFFF"/>
+            <solid android:color="#1A000000"/>
             <corners android:radius="83dp"/>
         </shape>
     </item>
-    <!-- Liquid Top-Shine Highlight -->
+    <!-- 1.5 Inner Shadow -->
+    <item android:top="2dp" android:bottom="-2dp" android:left="0.5dp" android:right="0.5dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#1A000000"/>
+            <corners android:radius="83dp"/>
+        </shape>
+    </item>
+    <!-- 2. Base Color -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#66404040"/>
+            <corners android:radius="83dp"/>
+        </shape>
+    </item>
+    <!-- 3. Liquid Top-Shine Highlight -->
     <item>
         <shape android:shape="rectangle">
             <gradient
