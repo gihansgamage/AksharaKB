@@ -119,7 +119,7 @@ class MyInputMethodService : InputMethodService(),
     private val tamilPhoneticMap = listOf(
         "aa" to "ஆ","ii" to "ஈ","uu" to "ஊ","ee" to "ஏ","oo" to "ஓ",
         "ai" to "ஐ","au" to "ஔ","ng" to "ங","ch" to "ச","ny" to "ஞ",
-        "th" to "த","nn" to "ண","nh" to "ன","zh" to "ழ","ll" to "ள","rr" to "ற",
+        "th" to "த","nn" to "ண","nh" to "ன","nj" to "ஞ","zh" to "ழ","ll" to "ள","rr" to "ற",
         "a" to "அ","i" to "இ","u" to "உ","e" to "எ","o" to "ஒ",
         "k" to "க","c" to "ச","t" to "ட","p" to "ப","m" to "ம",
         "y" to "ய","r" to "ர","l" to "ல","v" to "வ","w" to "வ",
@@ -443,7 +443,7 @@ class MyInputMethodService : InputMethodService(),
                 phonetic && numPad  -> R.xml.tamil_phonetic
                 phonetic && !numPad -> R.xml.tamil_phonetic_no_numbers
                 !phonetic && numPad -> R.xml.tamil
-                else                -> R.xml.tamil   // tamil direct has no number row already
+                else                -> R.xml.tamil_no_numbers
             }
             else -> if (numPad) R.xml.qwerty else R.xml.qwerty_no_numbers
         }
@@ -1103,17 +1103,27 @@ class MyInputMethodService : InputMethodService(),
         val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
         val isEnglish = lang == KeyboardPreferences.LANG_EN
 
-        var ch = code.toChar()
+        var outText = code.toChar().toString()
+        val shifted = capsState != CapsState.NONE
 
-        // English auto-caps: if shift is active, uppercase the letter
-        if (capsState != CapsState.NONE && ch.isLetter()) ch = ch.uppercaseChar()
-        ic.commitText(ch.toString(), 1)
-        currentInput.append(ch)
+        if (shifted) {
+            val key = keyboardView?.keyboard?.keys?.find { it.codes?.firstOrNull() == code }
+            val popupRaw = key?.popupCharacters?.toString()?.trim().orEmpty()
+            val popupFirst = popupRaw.split(" ").firstOrNull().orEmpty()
+            outText = when {
+                popupFirst.isNotEmpty() -> popupFirst
+                isEnglish && outText.length == 1 && outText[0].isLetter() -> outText[0].uppercaseChar().toString()
+                else -> outText
+            }
+        }
+
+        ic.commitText(outText, 1)
+        currentInput.append(outText)
         updateCandidates(currentInput.toString())
 
         // Only reset SHIFT after typing a letter — not after space/punct.
         // This way shift stays active until the user actually types a letter or taps shift again.
-        if (capsState == CapsState.SHIFT && !isSymbols && ch.isLetter()) {
+        if (capsState == CapsState.SHIFT && !isSymbols) {
             capsState = CapsState.NONE
             keyboard?.isShifted = false
             keyboardView?.invalidateAllKeys()
@@ -1129,12 +1139,12 @@ class MyInputMethodService : InputMethodService(),
                 textBefore.endsWith("? ")                       -> true
                 textBefore.endsWith("! ")                       -> true
                 textBefore.endsWith("\n")         -> true
-                textBefore.length <= 1 && ch == ' '            -> false
+                textBefore.length <= 1 && outText == " "          -> false
                 else                                            -> false
             }
-            if (shouldCap && capsState == CapsState.NONE && !ch.isLetter()) {
+            if (shouldCap && capsState == CapsState.NONE && !outText.last().isLetter()) {
                 // Only auto-cap on next LETTER key, not on space itself
-            } else if (shouldCap && capsState == CapsState.NONE && ch == ' ') {
+            } else if (shouldCap && capsState == CapsState.NONE && outText == " ") {
                 // Check if prev non-space char was sentence end
                 val prevText = ic.getTextBeforeCursor(4, 0)?.toString()?.trimEnd() ?: ""
                 if (prevText.endsWith(".") || prevText.endsWith("?") || prevText.endsWith("!")) {
@@ -1172,19 +1182,22 @@ class MyInputMethodService : InputMethodService(),
         }
 
         if (lang == KeyboardPreferences.LANG_TA) {
-            // Tamil: greedy-ish logic
-            for (len in minOf(3, buf.length) downTo 1) {
-                val s = buf.takeLast(len)
-                val m = tamilPhoneticMap.firstOrNull { it.first == s } ?: continue
-                val ic = currentInputConnection ?: return
-                ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
-                ic.commitText(m.second, 1)
-                lastPhoneticCommitLen = m.second.length
-                repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
-                currentInput.append(m.second)
+            val ic = currentInputConnection ?: return
+            val lowerBuf = buf.lowercase()
+
+            for (len in minOf(3, lowerBuf.length) downTo 1) {
+                val suffix = lowerBuf.takeLast(len)
+                val match = tamilPhoneticMap.firstOrNull { it.first == suffix } ?: continue
+                ic.commitText(match.second, 1)
+                currentInput.append(match.second)
+                phoneticBuffer.clear()
+                lastPhoneticCommitLen = 0
                 updateCandidates(currentInput.toString())
                 return
             }
+
+            phoneticBuffer.clear()
+            lastPhoneticCommitLen = 0
         } else {
             // Sinhala: Greedy Longest-Sequence Matching
             val ic = currentInputConnection ?: return

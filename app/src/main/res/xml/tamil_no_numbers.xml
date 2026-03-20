@@ -10,19 +10,6 @@
     android:verticalGap="0dp">
 
     <Row>
-        <Key android:codes="49"  android:keyLabel="1" android:popupCharacters="!" android:keyEdgeFlags="left"/>
-        <Key android:codes="50"  android:keyLabel="2" android:popupCharacters="@"/>
-        <Key android:codes="51"  android:keyLabel="3" android:popupCharacters="#"/>
-        <Key android:codes="52"  android:keyLabel="4" android:popupCharacters="$"/>
-        <Key android:codes="53"  android:keyLabel="5" android:popupCharacters="%"/>
-        <Key android:codes="54"  android:keyLabel="6" android:popupCharacters="^"/>
-        <Key android:codes="55"  android:keyLabel="7" android:popupCharacters="&amp;"/>
-        <Key android:codes="56"  android:keyLabel="8" android:popupCharacters="*"/>
-        <Key android:codes="57"  android:keyLabel="9" android:popupCharacters="("/>
-        <Key android:codes="48"  android:keyLabel="0" android:popupCharacters=")" android:keyEdgeFlags="right"/>
-    </Row>
-
-    <Row>
         <Key android:codes="2950" android:keyLabel="ஆ" android:keyEdgeFlags="left"/>
         <Key android:codes="2952" android:keyLabel="ஈ"/>
         <Key android:codes="2954" android:keyLabel="ஊ"/>

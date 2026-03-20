@@ -13,40 +13,40 @@
 
 
     <Row>
-        <Key android:codes="113" android:keyLabel="q"  android:keyEdgeFlags="left"/>
-        <Key android:codes="119" android:keyLabel="w"/>
-        <Key android:codes="101" android:keyLabel="e"/>
-        <Key android:codes="114" android:keyLabel="r"/>
-        <Key android:codes="116" android:keyLabel="t"/>
-        <Key android:codes="121" android:keyLabel="y"/>
-        <Key android:codes="117" android:keyLabel="u"/>
-        <Key android:codes="105" android:keyLabel="i"/>
-        <Key android:codes="111" android:keyLabel="o"/>
-        <Key android:codes="112" android:keyLabel="p"  android:keyEdgeFlags="right"/>
+        <Key android:codes="113" android:keyLabel="q" android:popupCharacters="Q"  android:keyEdgeFlags="left"/>
+        <Key android:codes="119" android:keyLabel="w" android:popupCharacters="W"/>
+        <Key android:codes="101" android:keyLabel="e" android:popupCharacters="E"/>
+        <Key android:codes="114" android:keyLabel="r" android:popupCharacters="R"/>
+        <Key android:codes="116" android:keyLabel="t" android:popupCharacters="T"/>
+        <Key android:codes="121" android:keyLabel="y" android:popupCharacters="Y"/>
+        <Key android:codes="117" android:keyLabel="u" android:popupCharacters="U"/>
+        <Key android:codes="105" android:keyLabel="i" android:popupCharacters="I"/>
+        <Key android:codes="111" android:keyLabel="o" android:popupCharacters="O"/>
+        <Key android:codes="112" android:keyLabel="p" android:popupCharacters="P"  android:keyEdgeFlags="right"/>
     </Row>
     <Row>
-        <Key android:codes="97"  android:keyLabel="a"
+        <Key android:codes="97"  android:keyLabel="a" android:popupCharacters="A"
             android:horizontalGap="5%p" android:keyEdgeFlags="left"/>
-        <Key android:codes="115" android:keyLabel="s"/>
-        <Key android:codes="100" android:keyLabel="d"/>
-        <Key android:codes="102" android:keyLabel="f"/>
-        <Key android:codes="103" android:keyLabel="g"/>
-        <Key android:codes="104" android:keyLabel="h"/>
-        <Key android:codes="106" android:keyLabel="j"/>
-        <Key android:codes="107" android:keyLabel="k"/>
-        <Key android:codes="108" android:keyLabel="l"  android:keyEdgeFlags="right"/>
+        <Key android:codes="115" android:keyLabel="s" android:popupCharacters="S"/>
+        <Key android:codes="100" android:keyLabel="d" android:popupCharacters="D"/>
+        <Key android:codes="102" android:keyLabel="f" android:popupCharacters="F"/>
+        <Key android:codes="103" android:keyLabel="g" android:popupCharacters="G"/>
+        <Key android:codes="104" android:keyLabel="h" android:popupCharacters="H"/>
+        <Key android:codes="106" android:keyLabel="j" android:popupCharacters="J"/>
+        <Key android:codes="107" android:keyLabel="k" android:popupCharacters="K"/>
+        <Key android:codes="108" android:keyLabel="l" android:popupCharacters="L"  android:keyEdgeFlags="right"/>
     </Row>
     <Row>
         <Key android:codes="-1"  android:keyLabel="⇧"
             android:keyWidth="15%p" android:keyEdgeFlags="left"
             android:isModifier="true" android:isSticky="true"/>
-        <Key android:codes="122" android:keyLabel="z"/>
-        <Key android:codes="120" android:keyLabel="x"/>
-        <Key android:codes="99"  android:keyLabel="c"/>
-        <Key android:codes="118" android:keyLabel="v"/>
-        <Key android:codes="98"  android:keyLabel="b"/>
-        <Key android:codes="110" android:keyLabel="n"/>
-        <Key android:codes="109" android:keyLabel="m"/>
+        <Key android:codes="122" android:keyLabel="z" android:popupCharacters="Z"/>
+        <Key android:codes="120" android:keyLabel="x" android:popupCharacters="X"/>
+        <Key android:codes="99"  android:keyLabel="c" android:popupCharacters="C"/>
+        <Key android:codes="118" android:keyLabel="v" android:popupCharacters="V"/>
+        <Key android:codes="98"  android:keyLabel="b" android:popupCharacters="B"/>
+        <Key android:codes="110" android:keyLabel="n" android:popupCharacters="N"/>
+        <Key android:codes="109" android:keyLabel="m" android:popupCharacters="M"/>
         <Key android:codes="-5"  android:keyLabel="⌫"
             android:keyWidth="15%p" android:keyEdgeFlags="right"
             android:isRepeatable="true"/>
