@@ -102,8 +102,8 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- ═══ SINHALA LAYOUT ═══ -->
-            <TextView style="@style/SectionLabel" android:text="SINHALA LAYOUT"/>
+            <!-- ═══ KEYBOARD LAYOUT ═══ -->
+            <TextView style="@style/SectionLabel" android:text="KEYBOARD LAYOUT"/>
 
             <androidx.cardview.widget.CardView style="@style/GlassCard">
                 <LinearLayout style="@style/CardInner">
@@ -113,7 +113,7 @@
                         android:layout_height="wrap_content">
                         <RadioButton android:id="@+id/rbPhonetic"    style="@style/GlassRadio" android:text="Phonetic — type as you pronounce"/>
                         <View style="@style/Divider"/>
-                        <RadioButton android:id="@+id/rbWijesekara"  style="@style/GlassRadio" android:text="Wijesekara — standard Sri Lankan layout"/>
+                        <RadioButton android:id="@+id/rbWijesekara"  style="@style/GlassRadio" android:text="Standard — Wijesekara / Tamil QWERTY"/>
                     </RadioGroup>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

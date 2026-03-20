@@ -116,16 +116,7 @@ class MyInputMethodService : InputMethodService(),
         "y" to "ය","r" to "ර","l" to "ල","v" to "ව","w" to "ව",
         "s" to "ස","h" to "හ","f" to "ෆ","q" to "ක","x" to "ෂ","z" to "ශ"
     )
-    private val tamilPhoneticMap = listOf(
-        "aa" to "ஆ","ii" to "ஈ","uu" to "ஊ","ee" to "ஏ","oo" to "ஓ",
-        "ai" to "ஐ","au" to "ஔ","ng" to "ங","ch" to "ச","ny" to "ஞ",
-        "th" to "த","nn" to "ண","nh" to "ன","nj" to "ஞ","zh" to "ழ","ll" to "ள","rr" to "ற",
-        "a" to "அ","i" to "இ","u" to "உ","e" to "எ","o" to "ஒ",
-        "k" to "க","c" to "ச","t" to "ட","p" to "ப","m" to "ம",
-        "y" to "ய","r" to "ர","l" to "ல","v" to "வ","w" to "வ",
-        "s" to "ச","h" to "ஹ","n" to "ந","z" to "ழ","f" to "ஃ",
-        "j" to "ஜ","g" to "க","d" to "ட","b" to "ப","q" to "க"
-    )
+
 
     // ── Emoji categories ─────────────────────────────────────────
     private val emojiCategories = listOf(
@@ -622,10 +613,51 @@ class MyInputMethodService : InputMethodService(),
     }
 
     // ── Key handling ──────────────────────────────────────────────
+    private fun isTamilConsonant(c: Char): Boolean {
+        return c in '\u0B95'..'\u0BB9' || c == '\u0B92' // Standard + Grantha + some extras
+    }
+
+    private fun getTamilVowelSign(vowelCode: Int): String? {
+        return when (vowelCode) {
+            2950 -> "\u0BBE" // ஆ -> ா
+            2951 -> "\u0BBF" // இ -> ி
+            2952 -> "\u0BC0" // ஈ -> ී
+            2953 -> "\u0BC1" // உ -> ු
+            2954 -> "\u0BC2" // ஊ -> ූ
+            2958 -> "\u0BC6" // எ -> ෙ
+            2959 -> "\u0BC7" // ஏ -> ේ
+            2960 -> "\u0BC8" // ஐ -> ෛ
+            2962 -> "\u0BCA" // ஒ -> ො
+            2963 -> "\u0BCB" // ஓ -> ෝ
+            2957 -> "\u0BCC" // ஔ -> ෞ
+            else -> null
+        }
+    }
+
     override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
         val ic = currentInputConnection ?: return; vibrateKey()
         val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
-        // (emoji keyboard handled below via isEmoji state)
+        val isPhonetic = prefs?.isPhonetic(lang) ?: false
+
+        // 1. Tamil Direct Auto-Vowel Attachment (e.g., Pa + U -> Pu)
+        if (lang == KeyboardPreferences.LANG_TA && !isPhonetic && !isSymbols && !isEmoji) {
+            if (primaryCode in 2949..2963) { // Independent Vowels Range
+                val prevCharStr = ic.getTextBeforeCursor(1, 0)?.toString() ?: ""
+                if (prevCharStr.isNotEmpty()) {
+                    val prevChar = prevCharStr.first()
+                    if (isTamilConsonant(prevChar)) {
+                        val sign = getTamilVowelSign(primaryCode)
+                        if (sign != null) {
+                            ic.commitText(sign, 1)
+                            return
+                        } else if (primaryCode == 2949) {
+                            // Typing 'அ' (inherent a) after a consonant is redundant
+                            return
+                        }
+                    }
+                }
+            }
+        }
 
         when (primaryCode) {
             // ── Emoji panel handled via native views — these codes unused ──
@@ -1102,18 +1134,26 @@ class MyInputMethodService : InputMethodService(),
     private fun handleDirect(code: Int, ic: android.view.inputmethod.InputConnection) {
         val lang = prefs?.currentLanguage ?: KeyboardPreferences.LANG_EN
         val isEnglish = lang == KeyboardPreferences.LANG_EN
+        val shifted = capsState != CapsState.NONE
 
-        var ch = code.toChar()
+        var outStr = code.toChar().toString()
+        if (shifted && !isEnglish && code > 31) {
+            val key = keyboard?.keys?.find { it.codes?.firstOrNull() == code }
+            val popStr = key?.popupCharacters?.toString()?.trim() ?: ""
+            val firstPop = popStr.split(" ").firstOrNull() ?: ""
+            if (firstPop.isNotEmpty()) {
+                outStr = firstPop
+            }
+        } else if (shifted && isEnglish && code.toChar().isLetter()) {
+            outStr = code.toChar().uppercaseChar().toString()
+        }
 
-        // English auto-caps: if shift is active, uppercase the letter
-        if (capsState != CapsState.NONE && ch.isLetter()) ch = ch.uppercaseChar()
-        ic.commitText(ch.toString(), 1)
-        currentInput.append(ch)
+        ic.commitText(outStr, 1)
+        currentInput.append(outStr)
         updateCandidates(currentInput.toString())
 
         // Only reset SHIFT after typing a letter — not after space/punct.
-        // This way shift stays active until the user actually types a letter or taps shift again.
-        if (capsState == CapsState.SHIFT && !isSymbols && ch.isLetter()) {
+        if (capsState == CapsState.SHIFT && !isSymbols && outStr.first().isLetter()) {
             capsState = CapsState.NONE
             keyboard?.isShifted = false
             keyboardView?.invalidateAllKeys()
@@ -1129,12 +1169,12 @@ class MyInputMethodService : InputMethodService(),
                 textBefore.endsWith("? ")                       -> true
                 textBefore.endsWith("! ")                       -> true
                 textBefore.endsWith("\n")         -> true
-                textBefore.length <= 1 && ch == ' '            -> false
+                textBefore.length <= 1 && outStr.first() == ' '            -> false
                 else                                            -> false
             }
-            if (shouldCap && capsState == CapsState.NONE && !ch.isLetter()) {
+            if (shouldCap && capsState == CapsState.NONE && !outStr.first().isLetter()) {
                 // Only auto-cap on next LETTER key, not on space itself
-            } else if (shouldCap && capsState == CapsState.NONE && ch == ' ') {
+            } else if (shouldCap && capsState == CapsState.NONE && outStr.first() == ' ') {
                 // Check if prev non-space char was sentence end
                 val prevText = ic.getTextBeforeCursor(4, 0)?.toString()?.trimEnd() ?: ""
                 if (prevText.endsWith(".") || prevText.endsWith("?") || prevText.endsWith("!")) {
@@ -1172,18 +1212,27 @@ class MyInputMethodService : InputMethodService(),
         }
 
         if (lang == KeyboardPreferences.LANG_TA) {
-            // Tamil: greedy-ish logic
-            for (len in minOf(3, buf.length) downTo 1) {
-                val s = buf.takeLast(len)
-                val m = tamilPhoneticMap.firstOrNull { it.first == s } ?: continue
-                val ic = currentInputConnection ?: return
+            // Tamil: greedy matching with TamilPhonetic engine
+            val ic = currentInputConnection ?: return
+            val match = TamilPhonetic.tryConvert(buf)
+            
+            if (match != null) {
+                val (consumed, tamil) = match
+                if (consumed == buf.length) {
+                    ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
+                    ic.commitText(tamil, 1)
+                    lastPhoneticCommitLen = tamil.length
+                } else {
+                    ic.commitText(tamil, 1)
+                    lastPhoneticCommitLen = tamil.length
+                    val remaining = buf.takeLast(consumed)
+                    phoneticBuffer.setLength(0)
+                    phoneticBuffer.append(remaining)
+                }
+            } else {
                 ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
-                ic.commitText(m.second, 1)
-                lastPhoneticCommitLen = m.second.length
-                repeat(len) { if (phoneticBuffer.isNotEmpty()) phoneticBuffer.deleteCharAt(phoneticBuffer.length - 1) }
-                currentInput.append(m.second)
-                updateCandidates(currentInput.toString())
-                return
+                ic.commitText(buf, 1)
+                lastPhoneticCommitLen = buf.length
             }
         } else {
             // Sinhala: Greedy Longest-Sequence Matching
@@ -1191,24 +1240,32 @@ class MyInputMethodService : InputMethodService(),
             val match = SinhalaPhonetic.tryConvert(buf)
             
             if (match != null) {
-                val (consumed, sinhala) = match
+                var (consumed, sinhala) = match
                 
+                // Middle-word vowel replacement (u -> vu, i -> yi)
+                if ((sinhala == "ඉ" || sinhala == "උ") && buf.length == consumed) {
+                    val prevText = ic.getTextBeforeCursor(1, 0)?.toString() ?: ""
+                    if (prevText.isNotEmpty()) {
+                        val prevChar = prevText.first()
+                        // If previous is a Sinhala char and NOT followed by HAL (්)
+                        // Note: HAL is \u0DCA
+                        val isSinhala = prevChar in '\u0D80'..'\u0DFF'
+                        if (isSinhala && prevChar != '\u0DCA') {
+                            sinhala = if (sinhala == "ඉ") "යි" else "වු"
+                        }
+                    }
+                }
+
                 // CASE 1: Greedy match (consumes ENTIRE buffer)
-                // e.g. 'm' -> 'ma' -> 'maa'. We just update the current commit.
                 if (consumed == buf.length) {
                     ic.deleteSurroundingText(lastPhoneticCommitLen, 0)
                     ic.commitText(sinhala, 1)
                     lastPhoneticCommitLen = sinhala.length
-                    // DO NOT clear buffer, it might be extended (aa -> aaa, etc.)
                 } 
-                // CASE 2: Syllable break (only consumes the TAIL of the buffer)
-                // e.g. 'maa' (මා) followed by 'k' -> 'maak' matches 'k' (ක්)
+                // CASE 2: Syllable break
                 else {
-                    // Current match is a new syllable. Commit it.
                     ic.commitText(sinhala, 1)
                     lastPhoneticCommitLen = sinhala.length
-                    
-                    // Reset buffer to only include the new syllable's chars
                     val remaining = buf.takeLast(consumed)
                     phoneticBuffer.setLength(0)
                     phoneticBuffer.append(remaining)

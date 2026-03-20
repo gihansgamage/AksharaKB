@@ -65,6 +65,11 @@ class KeyboardPreferences(context: Context) {
         get() = prefs.getString(KEY_SINHALA_LAYOUT, LAYOUT_PHONETIC) ?: LAYOUT_PHONETIC
         set(v) = prefs.edit().putString(KEY_SINHALA_LAYOUT, v).apply()
 
+    fun isPhonetic(lang: String): Boolean {
+        if (lang == LANG_EN) return false
+        return sinhalaLayout == LAYOUT_PHONETIC
+    }
+
     var enabledLanguages: List<String>
         get() {
             val raw = prefs.getString(KEY_ENABLED_LANGS, "$LANG_EN,$LANG_SI,$LANG_TA") ?: "$LANG_EN,$LANG_SI,$LANG_TA"
