@@ -119,7 +119,7 @@ class MyInputMethodService : InputMethodService(),
     private val tamilPhoneticMap = listOf(
         "aa" to "ஆ","ii" to "ஈ","uu" to "ஊ","ee" to "ஏ","oo" to "ஓ",
         "ai" to "ஐ","au" to "ஔ","ng" to "ங","ch" to "ச","ny" to "ஞ",
-        "th" to "த","nn" to "ண","nh" to "ன","zh" to "ழ","ll" to "ள","rr" to "ற",
+        "th" to "த","nn" to "ண","nh" to "ன","nj" to "ஞ","zh" to "ழ","ll" to "ள","rr" to "ற",
         "a" to "அ","i" to "இ","u" to "உ","e" to "எ","o" to "ஒ",
         "k" to "க","c" to "ச","t" to "ட","p" to "ப","m" to "ம",
         "y" to "ய","r" to "ர","l" to "ல","v" to "வ","w" to "வ",
@@ -443,7 +443,7 @@ class MyInputMethodService : InputMethodService(),
                 phonetic && numPad  -> R.xml.tamil_phonetic
                 phonetic && !numPad -> R.xml.tamil_phonetic_no_numbers
                 !phonetic && numPad -> R.xml.tamil
-                else                -> R.xml.tamil   // tamil direct has no number row already
+                else                -> R.xml.tamil_no_numbers
             }
             else -> if (numPad) R.xml.qwerty else R.xml.qwerty_no_numbers
         }
