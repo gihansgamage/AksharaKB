@@ -37,6 +37,10 @@ class MainActivity : AppCompatActivity() {
         binding.btnUserGuide.setOnClickListener {
             startActivity(Intent(this, UserGuideActivity::class.java))
         }
+        binding.btnWebsite.setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://gihansgamage.github.io/AksharaKB-web/"))
+            startActivity(intent)
+        }
     }
 
     private fun updateStatus() {

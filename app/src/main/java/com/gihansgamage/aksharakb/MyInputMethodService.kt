@@ -215,6 +215,7 @@ class MyInputMethodService : InputMethodService(),
     // ── View ──────────────────────────────────────────────────────
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        isEmoji = false
         // Re-apply glass background to the single candidate_bar container every time the keyboard appears
         val root = keyboardView?.rootView
         val glassRes = if (isDark()) R.drawable.candidate_bar_glass_dark
@@ -239,6 +240,7 @@ class MyInputMethodService : InputMethodService(),
         // Refresh lang pills and keyboard in case theme changed
         keyboardView?.refreshPrefs()
         rebuildLangPills()
+        setKeyboardLayout()
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ checkAutoCapEnglish() }, 100)
     }
 
