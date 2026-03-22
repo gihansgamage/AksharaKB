@@ -281,9 +281,13 @@ class MyInputMethodService : InputMethodService(),
         // Single language switch icon — tap to cycle languages
         v.findViewById<TextView>(R.id.btn_lang_single)?.setOnClickListener {
             vibrateKey()
-            val en  = prefs?.enabledLanguages ?: listOf(KeyboardPreferences.LANG_EN)
-            val cur = prefs?.currentLanguage  ?: KeyboardPreferences.LANG_EN
-            prefs?.currentLanguage = en[(en.indexOf(cur) + 1) % en.size]
+            if (isEmoji) {
+                isEmoji = false
+            } else {
+                val en  = prefs?.enabledLanguages ?: listOf(KeyboardPreferences.LANG_EN)
+                val cur = prefs?.currentLanguage  ?: KeyboardPreferences.LANG_EN
+                prefs?.currentLanguage = en[(en.indexOf(cur) + 1) % en.size]
+            }
             isSymbols = false; capsState = CapsState.NONE; awaitingZWJ = false
             phoneticBuffer.clear(); currentInput.clear()
             setKeyboardLayout(); updateLangIcon(v); updateCandidates("")
