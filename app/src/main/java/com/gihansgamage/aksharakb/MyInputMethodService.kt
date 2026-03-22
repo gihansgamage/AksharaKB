@@ -34,6 +34,7 @@ class MyInputMethodService : InputMethodService(),
     private var emojiActionBar: LinearLayout? = null
     private var activeCategoryIndex = 0
     private val recentEmojis = mutableListOf<String>()
+    private val displayRecentEmojis = mutableListOf<String>()
     private val MAX_RECENT = 40
     private var btnSettings: TextView? = null
     private var wordPredictor: WordPredictor? = null
@@ -465,6 +466,11 @@ class MyInputMethodService : InputMethodService(),
 
         // For emoji keyboard: populate emoji labels into the keyboard keys
         if (isEmoji) {
+            // Populate display list only when first entering emoji mode to prevent layout shifts
+            if (emojiPanel?.visibility != android.view.View.VISIBLE) {
+                displayRecentEmojis.clear()
+                displayRecentEmojis.addAll(recentEmojis)
+            }
             keyboardView?.visibility = android.view.View.GONE
             emojiPanel?.visibility   = android.view.View.VISIBLE
             keyboardView?.isEmojiMode = false
@@ -547,7 +553,7 @@ class MyInputMethodService : InputMethodService(),
         // ── Emoji grid ─────────────────────────────────────────────
         grid.removeAllViews()
         val emojis = when {
-            activeCategoryIndex == -1 -> recentEmojis.toList().ifEmpty {
+            activeCategoryIndex == -1 -> displayRecentEmojis.toList().ifEmpty {
                 listOf("😊","❤","👍","😂","🙏","🔥","😍","🤗")
             }
             else -> emojiCategories[activeCategoryIndex].second
@@ -576,8 +582,7 @@ class MyInputMethodService : InputMethodService(),
                         vibrateKey()
                         currentInputConnection?.commitText(emoji, 1)
                         saveRecentEmoji(emoji)
-                        // Refresh grid if in Recent tab to show new order immediately
-                        if (activeCategoryIndex == -1) buildEmojiPanel(-1)
+                        // Removed immediate buildEmojiPanel(-1) to prevent layout shifts
                     }
                 })
             }
